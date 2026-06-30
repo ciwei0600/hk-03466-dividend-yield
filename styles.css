@@ -256,6 +256,10 @@ h1 {
   margin-bottom: 18px;
 }
 
+.details-wide {
+  grid-column: 1 / -1;
+}
+
 .details h2 {
   margin: 0 0 8px;
   font-size: 18px;
