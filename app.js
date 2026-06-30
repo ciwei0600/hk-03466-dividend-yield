@@ -88,6 +88,16 @@ function getNearestIndex(x, points) {
   return nearest;
 }
 
+function paddedRange(values) {
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = Math.max(max - min, 1);
+  return {
+    min: min - span * 0.08,
+    max: max + span * 0.08,
+  };
+}
+
 function renderChart() {
   if (!chart || !rows.length) return;
 
@@ -95,18 +105,25 @@ function renderChart() {
   const width = Math.max(container.clientWidth, 320);
   const height = width < 620 ? 360 : 520;
   const margin = width < 620
-    ? { top: 24, right: 18, bottom: 48, left: 48 }
-    : { top: 28, right: 30, bottom: 56, left: 64 };
+    ? { top: 34, right: 48, bottom: 48, left: 48 }
+    : { top: 38, right: 76, bottom: 56, left: 64 };
   const plotWidth = width - margin.left - margin.right;
   const plotHeight = height - margin.top - margin.bottom;
   const minTime = rows[0].date.getTime();
   const maxTime = rows.at(-1).date.getTime();
-  const values = rows.map((row) => row.yieldPct);
-  const minY = Math.floor(Math.min(...values) - 0.4);
-  const maxY = Math.ceil(Math.max(...values) + 0.4);
+  const yieldValues = rows.map((row) => row.yieldPct);
+  const priceValues = rows.map((row) => row.close);
+  const yieldRange = paddedRange(yieldValues);
+  const priceRange = paddedRange(priceValues);
+  const minYield = Math.floor(yieldRange.min * 10) / 10;
+  const maxYield = Math.ceil(yieldRange.max * 10) / 10;
+  const minPrice = Math.floor(priceRange.min);
+  const maxPrice = Math.ceil(priceRange.max);
   const xScale = (date) => margin.left + ((date.getTime() - minTime) / (maxTime - minTime)) * plotWidth;
-  const yScale = (value) => margin.top + ((maxY - value) / (maxY - minY)) * plotHeight;
-  const points = rows.map((row) => ({ x: xScale(row.date), y: yScale(row.yieldPct) }));
+  const yieldScale = (value) => margin.top + ((maxYield - value) / (maxYield - minYield)) * plotHeight;
+  const priceScale = (value) => margin.top + ((maxPrice - value) / (maxPrice - minPrice)) * plotHeight;
+  const yieldPoints = rows.map((row) => ({ x: xScale(row.date), y: yieldScale(row.yieldPct) }));
+  const pricePoints = rows.map((row) => ({ x: xScale(row.date), y: priceScale(row.close) }));
 
   chart.textContent = "";
   chart.setAttribute("viewBox", `0 0 ${width} ${height}`);
@@ -117,8 +134,9 @@ function renderChart() {
   const axis = makeSvgElement("g", { class: "chart-axis" });
   const yTicks = 5;
   for (let i = 0; i <= yTicks; i += 1) {
-    const value = minY + ((maxY - minY) / yTicks) * i;
-    const y = yScale(value);
+    const yieldValue = minYield + ((maxYield - minYield) / yTicks) * i;
+    const priceValue = minPrice + ((maxPrice - minPrice) / yTicks) * i;
+    const y = yieldScale(yieldValue);
     grid.appendChild(makeSvgElement("line", {
       x1: margin.left,
       x2: width - margin.right,
@@ -130,8 +148,17 @@ function renderChart() {
       y: y + 4,
       "text-anchor": "end",
     });
-    label.textContent = `${value.toFixed(1)}%`;
+    label.textContent = `${yieldValue.toFixed(1)}%`;
     axis.appendChild(label);
+
+    const priceLabel = makeSvgElement("text", {
+      class: "price-axis",
+      x: width - margin.right + 10,
+      y: y + 4,
+      "text-anchor": "start",
+    });
+    priceLabel.textContent = priceValue.toFixed(1);
+    axis.appendChild(priceLabel);
   }
 
   const seenMonths = new Set();
@@ -160,17 +187,45 @@ function renderChart() {
     axis.appendChild(label);
   });
 
+  const legend = makeSvgElement("g", { class: "chart-legend" });
+  const legendX = margin.left;
+  const legendY = 14;
+  legend.appendChild(makeSvgElement("line", {
+    class: "legend-yield",
+    x1: legendX,
+    x2: legendX + 22,
+    y1: legendY,
+    y2: legendY,
+  }));
+  const yieldLegend = makeSvgElement("text", { x: legendX + 28, y: legendY + 4 });
+  yieldLegend.textContent = "股息率";
+  legend.appendChild(yieldLegend);
+  const priceLegendX = legendX + 96;
+  legend.appendChild(makeSvgElement("line", {
+    class: "legend-price",
+    x1: priceLegendX,
+    x2: priceLegendX + 22,
+    y1: legendY,
+    y2: legendY,
+  }));
+  const priceLegend = makeSvgElement("text", { x: priceLegendX + 28, y: legendY + 4 });
+  priceLegend.textContent = "收盘价";
+  legend.appendChild(priceLegend);
+  chart.appendChild(legend);
+
   const areaPath = [
-    `M ${points[0].x} ${height - margin.bottom}`,
-    ...points.map((point) => `L ${point.x} ${point.y}`),
-    `L ${points.at(-1).x} ${height - margin.bottom}`,
+    `M ${yieldPoints[0].x} ${height - margin.bottom}`,
+    ...yieldPoints.map((point) => `L ${point.x} ${point.y}`),
+    `L ${yieldPoints.at(-1).x} ${height - margin.bottom}`,
     "Z",
   ].join(" ");
   chart.appendChild(grid);
   chart.appendChild(makeSvgElement("path", { class: "chart-area", d: areaPath }));
 
-  const linePath = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
-  chart.appendChild(makeSvgElement("path", { class: "chart-line", d: linePath }));
+  const yieldPath = yieldPoints.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+  const pricePath = pricePoints.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+  chart.appendChild(makeSvgElement("path", { class: "chart-line chart-line-yield", d: yieldPath }));
+  chart.appendChild(makeSvgElement("path", { class: "chart-line chart-line-price", d: pricePath }));
   chart.appendChild(axis);
 
   const overlay = makeSvgElement("rect", {
@@ -183,21 +238,21 @@ function renderChart() {
   overlay.addEventListener("click", (event) => {
     const rect = chart.getBoundingClientRect();
     const svgX = ((event.clientX - rect.left) / rect.width) * width;
-    selectedIndex = getNearestIndex(svgX, points);
+    selectedIndex = getNearestIndex(svgX, yieldPoints);
     updateReadout(rows[selectedIndex]);
     renderChart();
   });
   chart.appendChild(overlay);
 
   const hitLayer = makeSvgElement("g", { class: "hit-layer" });
-  points.forEach((point, index) => {
+  yieldPoints.forEach((point, index) => {
     const hit = makeSvgElement("circle", {
       cx: point.x,
       cy: point.y,
       r: 7,
       tabindex: 0,
       role: "button",
-      "aria-label": `${rows[index].tradeDate} ${formatPercent(rows[index].yieldPct)}`,
+      "aria-label": `${rows[index].tradeDate} ${formatPercent(rows[index].yieldPct)} ${formatHkd(rows[index].close)}`,
     });
     hit.addEventListener("click", () => {
       selectedIndex = index;
@@ -216,7 +271,8 @@ function renderChart() {
   });
   chart.appendChild(hitLayer);
 
-  const selected = points[selectedIndex];
+  const selected = yieldPoints[selectedIndex];
+  const selectedPrice = pricePoints[selectedIndex];
   chart.appendChild(makeSvgElement("line", {
     class: "selected-guide",
     x1: selected.x,
@@ -229,6 +285,12 @@ function renderChart() {
     cx: selected.x,
     cy: selected.y,
     r: 6,
+  }));
+  chart.appendChild(makeSvgElement("circle", {
+    class: "selected-price-point",
+    cx: selectedPrice.x,
+    cy: selectedPrice.y,
+    r: 5,
   }));
 }
 

@@ -8,6 +8,7 @@
   --accent: #1f6f8b;
   --accent-strong: #0f536b;
   --warn: #c47f2c;
+  --price: #8063a8;
 }
 
 * {
@@ -133,16 +134,47 @@ h1 {
   font-size: 13px;
 }
 
+.chart-axis .price-axis {
+  fill: var(--price);
+}
+
+.chart-legend text {
+  fill: #566166;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.chart-legend line {
+  stroke-linecap: round;
+  stroke-width: 3;
+}
+
+.chart-legend .legend-yield {
+  stroke: var(--accent);
+}
+
+.chart-legend .legend-price {
+  stroke: var(--price);
+}
+
 .chart-area {
   fill: rgba(31, 111, 139, 0.12);
 }
 
 .chart-line {
   fill: none;
-  stroke: var(--accent);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 3;
+}
+
+.chart-line-yield {
+  stroke: var(--accent);
+}
+
+.chart-line-price {
+  stroke: var(--price);
+  stroke-width: 2.4;
 }
 
 .chart-overlay {
@@ -171,6 +203,12 @@ h1 {
 
 .selected-point {
   fill: #c42c2c;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.selected-price-point {
+  fill: var(--price);
   stroke: #ffffff;
   stroke-width: 2;
 }
