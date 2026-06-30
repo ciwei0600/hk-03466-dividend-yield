@@ -34,7 +34,7 @@ fi
 CRON_CMD="cd ${DEPLOY_ROOT} && DATA_SERVER_API_BASE=${DATA_SERVER_API_BASE:-http://100.77.62.83:8010} DATA_SERVER_CONSUMER_ID=${DATA_SERVER_CONSUMER_ID:-cash-ranking} /usr/bin/python3 scripts/update-data.py >> runtime-data/update-data.log 2>&1"
 CRON_MARKER="# hk-03466-dividend-yield daily close update"
 CRON_LINE="5 18 * * 1-5 ${CRON_CMD}"
-(crontab -l 2>/dev/null | grep -v -F "${CRON_MARKER}" | grep -v -F "scripts/update-data.py"; echo "${CRON_MARKER}"; echo "${CRON_LINE}") | crontab -
+((crontab -l 2>/dev/null || true) | grep -v -F "${CRON_MARKER}" | grep -v -F "scripts/update-data.py" || true; echo "${CRON_MARKER}"; echo "${CRON_LINE}") | crontab -
 
 sudo nginx -t
 sudo systemctl reload nginx
