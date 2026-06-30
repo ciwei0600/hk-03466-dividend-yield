@@ -103,8 +103,12 @@ function renderChart() {
 
   const container = chart.parentElement;
   const width = Math.max(container.clientWidth, 320);
-  const height = width < 620 ? 360 : 520;
-  const margin = width < 620
+  const isPhone = width < 420;
+  const isCompact = width < 620;
+  const height = isPhone ? 330 : isCompact ? 360 : 520;
+  const margin = isPhone
+    ? { top: 34, right: 42, bottom: 44, left: 42 }
+    : isCompact
     ? { top: 34, right: 48, bottom: 48, left: 48 }
     : { top: 38, right: 76, bottom: 56, left: 64 };
   const plotWidth = width - margin.left - margin.right;
@@ -132,7 +136,7 @@ function renderChart() {
 
   const grid = makeSvgElement("g", { class: "chart-grid" });
   const axis = makeSvgElement("g", { class: "chart-axis" });
-  const yTicks = 5;
+  const yTicks = isPhone ? 4 : 5;
   for (let i = 0; i <= yTicks; i += 1) {
     const yieldValue = minYield + ((maxYield - minYield) / yTicks) * i;
     const priceValue = minPrice + ((maxPrice - minPrice) / yTicks) * i;
@@ -144,7 +148,7 @@ function renderChart() {
       y2: y,
     }));
     const label = makeSvgElement("text", {
-      x: margin.left - 10,
+      x: margin.left - (isPhone ? 8 : 10),
       y: y + 4,
       "text-anchor": "end",
     });
@@ -153,7 +157,7 @@ function renderChart() {
 
     const priceLabel = makeSvgElement("text", {
       class: "price-axis",
-      x: width - margin.right + 10,
+      x: width - margin.right + (isPhone ? 6 : 10),
       y: y + 4,
       "text-anchor": "start",
     });
@@ -168,7 +172,7 @@ function renderChart() {
     seenMonths.add(month);
     return true;
   });
-  const stride = width < 620 ? 3 : 2;
+  const stride = isPhone ? 4 : isCompact ? 3 : 2;
   monthTicks.forEach((row, index) => {
     if (index % stride !== 0) return;
     const x = xScale(row.date);
@@ -183,7 +187,7 @@ function renderChart() {
       y: height - 18,
       "text-anchor": "middle",
     });
-    label.textContent = row.tradeDate.slice(0, 7);
+    label.textContent = isPhone ? row.tradeDate.slice(2, 7) : row.tradeDate.slice(0, 7);
     axis.appendChild(label);
   });
 
@@ -249,7 +253,7 @@ function renderChart() {
     const hit = makeSvgElement("circle", {
       cx: point.x,
       cy: point.y,
-      r: 7,
+      r: isPhone ? 11 : 7,
       tabindex: 0,
       role: "button",
       "aria-label": `${rows[index].tradeDate} ${formatPercent(rows[index].yieldPct)} ${formatHkd(rows[index].close)}`,
@@ -284,13 +288,13 @@ function renderChart() {
     class: "selected-point",
     cx: selected.x,
     cy: selected.y,
-    r: 6,
+    r: isPhone ? 7 : 6,
   }));
   chart.appendChild(makeSvgElement("circle", {
     class: "selected-price-point",
     cx: selectedPrice.x,
     cy: selectedPrice.y,
-    r: 5,
+    r: isPhone ? 6 : 5,
   }));
 }
 

@@ -4,8 +4,8 @@ Static dashboard for 03466.HK daily annualized TTM dividend yield.
 
 ## Version
 
-- Version: `0.4.4`
-- Updated: `2026-06-30 16:21 CST`
+- Version: `0.4.5`
+- Updated: `2026-06-30 16:51 CST`
 
 ## Data
 
