@@ -4,8 +4,8 @@ Static dashboard for 03466.HK daily annualized TTM dividend yield.
 
 ## Version
 
-- Version: `0.2.0`
-- Updated: `2026-06-30 15:46 CST`
+- Version: `0.3.0`
+- Updated: `2026-06-30 15:52 CST`
 
 ## Data
 
@@ -23,6 +23,18 @@ yield = annualized_dividend / daily_close
 ```
 
 Before the first ex-dividend date, there is no current monthly dividend and no yield is plotted.
+
+## Daily Update
+
+The page tries `runtime-data/03466_ttm_dividend_yield_daily_annualized.csv` first and falls back to the release snapshot under `assets/`.
+
+On Quant, deployment installs a weekday `18:05 CST` cron job:
+
+```bash
+python3 scripts/update-data.py
+```
+
+The script refreshes `runtime-data/` from Data_Server close prices and Hang Seng Investment dividend data.
 
 ## Local Preview
 

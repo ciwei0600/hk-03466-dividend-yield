@@ -16,27 +16,27 @@
           <p class="subhead">按每日收盘价计算；TTM 不足 12 个月时，用最近单月股息补足到 12 个月。</p>
         </div>
         <div class="version">
-          <span>v0.2.0</span>
-          <span>2026-06-30 15:46 CST</span>
+          <span>v0.3.0</span>
+          <span>2026-06-30 15:52 CST</span>
         </div>
       </header>
 
       <section class="metrics" aria-label="关键指标">
         <div class="metric">
           <span class="label">最新日期</span>
-          <strong>2026-06-30</strong>
+          <strong data-latest-field="trade_date">2026-06-30</strong>
         </div>
         <div class="metric">
           <span class="label">收盘价</span>
-          <strong>18.26 HKD</strong>
+          <strong data-latest-field="close">18.26 HKD</strong>
         </div>
         <div class="metric">
           <span class="label">年化股息</span>
-          <strong>1.48 HKD</strong>
+          <strong data-latest-field="annualized_dividend_hkd">1.48 HKD</strong>
         </div>
         <div class="metric highlight">
           <span class="label">年化股息率</span>
-          <strong>8.11%</strong>
+          <strong data-latest-field="annualized_dividend_yield_pct">8.11%</strong>
         </div>
       </section>
 
@@ -79,8 +79,8 @@
       </section>
 
       <nav class="downloads" aria-label="下载">
-        <a href="./assets/03466_ttm_dividend_yield_daily_annualized.csv">下载逐日计算 CSV</a>
-        <a href="./assets/03466_dividends_source_hsi.csv">下载派息源数据 CSV</a>
+        <a id="dailyCsvLink" href="./assets/03466_ttm_dividend_yield_daily_annualized.csv">下载逐日计算 CSV</a>
+        <a id="dividendCsvLink" href="./assets/03466_dividends_source_hsi.csv">下载派息源数据 CSV</a>
       </nav>
     </main>
   </body>

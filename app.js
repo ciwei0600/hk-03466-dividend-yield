@@ -1,7 +1,18 @@
-const DATA_URL = "./assets/03466_ttm_dividend_yield_daily_annualized.csv";
+const DATA_SOURCES = [
+  {
+    daily: "./runtime-data/03466_ttm_dividend_yield_daily_annualized.csv",
+    dividends: "./runtime-data/03466_dividends_source_hsi.csv",
+  },
+  {
+    daily: "./assets/03466_ttm_dividend_yield_daily_annualized.csv",
+    dividends: "./assets/03466_dividends_source_hsi.csv",
+  },
+];
 
 const chart = document.querySelector("#yieldChart");
 const readout = document.querySelector("#pointReadout");
+const dailyCsvLink = document.querySelector("#dailyCsvLink");
+const dividendCsvLink = document.querySelector("#dividendCsvLink");
 
 let rows = [];
 let selectedIndex = -1;
@@ -41,6 +52,27 @@ function updateReadout(row) {
   readout.querySelector('[data-field="close"]').textContent = formatHkd(row.close);
   readout.querySelector('[data-field="annualized_dividend_hkd"]').textContent = formatHkd(row.annualizedDividend);
   readout.querySelector('[data-field="annualized_dividend_yield_pct"]').textContent = formatPercent(row.yieldPct);
+}
+
+function updateLatestMetrics(row) {
+  if (!row) return;
+  document.querySelector('[data-latest-field="trade_date"]').textContent = row.tradeDate;
+  document.querySelector('[data-latest-field="close"]').textContent = formatHkd(row.close);
+  document.querySelector('[data-latest-field="annualized_dividend_hkd"]').textContent = formatHkd(row.annualizedDividend);
+  document.querySelector('[data-latest-field="annualized_dividend_yield_pct"]').textContent = formatPercent(row.yieldPct);
+}
+
+async function fetchFirstAvailableCsv() {
+  for (const source of DATA_SOURCES) {
+    try {
+      const response = await fetch(source.daily, { cache: "no-store" });
+      if (!response.ok) continue;
+      return { csv: await response.text(), source };
+    } catch (error) {
+      console.warn(`failed to load ${source.daily}`, error);
+    }
+  }
+  throw new Error("No dividend yield CSV source is available");
 }
 
 function getNearestIndex(x, points) {
@@ -201,8 +233,9 @@ function renderChart() {
 }
 
 async function init() {
-  const response = await fetch(DATA_URL);
-  const csv = await response.text();
+  const { csv, source } = await fetchFirstAvailableCsv();
+  if (dailyCsvLink) dailyCsvLink.href = source.daily;
+  if (dividendCsvLink) dividendCsvLink.href = source.dividends;
   rows = parseCsv(csv)
     .map((row) => ({
       tradeDate: row.trade_date,
@@ -213,6 +246,7 @@ async function init() {
     }))
     .filter((row) => row.close !== null && row.annualizedDividend !== null && row.yieldPct !== null);
   selectedIndex = rows.length - 1;
+  updateLatestMetrics(rows[selectedIndex]);
   updateReadout(rows[selectedIndex]);
   renderChart();
   window.addEventListener("resize", renderChart);
