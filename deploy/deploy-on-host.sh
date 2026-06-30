@@ -7,15 +7,60 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 export SCRIPT_DIR
 export DEPLOY_ROOT="${DEPLOY_ROOT:-${PROJECT_ROOT}}"
 export DEPLOY_PORT="${DEPLOY_PORT:-80}"
+export DEPLOY_SSL_PORT="${DEPLOY_SSL_PORT:-443}"
 export DEPLOY_SERVER_NAME="${DEPLOY_SERVER_NAME:-03466-dividend.cw-info.top}"
+export DEPLOY_CERT_DIR="${DEPLOY_CERT_DIR:-/etc/letsencrypt/live/${DEPLOY_SERVER_NAME}}"
+export DEPLOY_CERT_FULLCHAIN="${DEPLOY_CERT_FULLCHAIN:-${DEPLOY_CERT_DIR}/fullchain.pem}"
+export DEPLOY_CERT_PRIVKEY="${DEPLOY_CERT_PRIVKEY:-${DEPLOY_CERT_DIR}/privkey.pem}"
+export DEPLOY_ENABLE_SSL="${DEPLOY_ENABLE_SSL:-auto}"
+
+SSL_AVAILABLE=0
+if sudo test -s "${DEPLOY_CERT_FULLCHAIN}" && sudo test -s "${DEPLOY_CERT_PRIVKEY}"; then
+  SSL_AVAILABLE=1
+fi
+
+case "${DEPLOY_ENABLE_SSL}" in
+  1|true|yes)
+    if [[ "${SSL_AVAILABLE}" != "1" ]]; then
+      echo "SSL requested but certificate files are missing under ${DEPLOY_CERT_DIR}" >&2
+      exit 1
+    fi
+    export DEPLOY_TEMPLATE="nginx-site-ssl.conf.template"
+    export DEPLOY_SSL_ACTIVE="1"
+    ;;
+  auto)
+    if [[ "${SSL_AVAILABLE}" == "1" ]]; then
+      export DEPLOY_TEMPLATE="nginx-site-ssl.conf.template"
+      export DEPLOY_SSL_ACTIVE="1"
+    else
+      export DEPLOY_TEMPLATE="nginx-site.conf.template"
+      export DEPLOY_SSL_ACTIVE="0"
+    fi
+    ;;
+  0|false|no)
+    export DEPLOY_TEMPLATE="nginx-site.conf.template"
+    export DEPLOY_SSL_ACTIVE="0"
+    ;;
+  *)
+    echo "Unsupported DEPLOY_ENABLE_SSL=${DEPLOY_ENABLE_SSL}" >&2
+    exit 1
+    ;;
+esac
 
 python3 - <<'PY' | sudo tee /etc/nginx/sites-available/hk-03466-dividend-yield >/dev/null
 import os
 from pathlib import Path
 
-template = Path(os.environ["SCRIPT_DIR"]) / "nginx-site.conf.template"
+template = Path(os.environ["SCRIPT_DIR"]) / os.environ["DEPLOY_TEMPLATE"]
 content = template.read_text()
-for key in ("DEPLOY_ROOT", "DEPLOY_PORT", "DEPLOY_SERVER_NAME"):
+for key in (
+    "DEPLOY_ROOT",
+    "DEPLOY_PORT",
+    "DEPLOY_SSL_PORT",
+    "DEPLOY_SERVER_NAME",
+    "DEPLOY_CERT_FULLCHAIN",
+    "DEPLOY_CERT_PRIVKEY",
+):
     content = content.replace("${" + key + "}", os.environ[key])
 print(content, end="")
 PY
@@ -39,5 +84,9 @@ CRON_LINE="5 18 * * 1-5 ${CRON_CMD}"
 sudo nginx -t
 sudo systemctl reload nginx
 
-echo "deployed ${DEPLOY_ROOT} on port ${DEPLOY_PORT} for ${DEPLOY_SERVER_NAME}"
+if [[ "${DEPLOY_SSL_ACTIVE}" == "1" ]]; then
+  echo "deployed ${DEPLOY_ROOT} on ports ${DEPLOY_PORT}/${DEPLOY_SSL_PORT} for https://${DEPLOY_SERVER_NAME}"
+else
+  echo "deployed ${DEPLOY_ROOT} on port ${DEPLOY_PORT} for http://${DEPLOY_SERVER_NAME}"
+fi
 echo "installed daily update cron: ${CRON_LINE}"

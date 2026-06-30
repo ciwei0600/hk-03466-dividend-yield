@@ -9,6 +9,12 @@ server {
     access_log /var/log/nginx/hk-03466-dividend-yield.access.log;
     error_log /var/log/nginx/hk-03466-dividend-yield.error.log;
 
+    location ^~ /.well-known/acme-challenge/ {
+        root ${DEPLOY_ROOT};
+        default_type "text/plain";
+        try_files $uri =404;
+    }
+
     location / {
         try_files $uri $uri/ =404;
     }

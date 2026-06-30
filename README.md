@@ -4,8 +4,8 @@ Static dashboard for 03466.HK daily annualized TTM dividend yield.
 
 ## Version
 
-- Version: `0.4.3`
-- Updated: `2026-06-30 16:15 CST`
+- Version: `0.4.4`
+- Updated: `2026-06-30 16:21 CST`
 
 ## Data
 
@@ -61,3 +61,6 @@ Use environment variables on Quant when needed:
 ```bash
 DEPLOY_PORT=80 DEPLOY_SERVER_NAME=03466-dividend.cw-info.top bash deploy/deploy-on-host.sh
 ```
+
+HTTPS is enabled automatically when a Let's Encrypt certificate exists under
+`/etc/letsencrypt/live/03466-dividend.cw-info.top/`.

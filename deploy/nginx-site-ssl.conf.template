@@ -1,0 +1,52 @@
+server {
+    listen ${DEPLOY_PORT};
+    listen [::]:${DEPLOY_PORT};
+    server_name ${DEPLOY_SERVER_NAME};
+
+    root ${DEPLOY_ROOT};
+
+    location ^~ /.well-known/acme-challenge/ {
+        root ${DEPLOY_ROOT};
+        default_type "text/plain";
+        try_files $uri =404;
+    }
+
+    location /health {
+        access_log off;
+        add_header Content-Type text/plain;
+        return 200 "ok\n";
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen ${DEPLOY_SSL_PORT} ssl http2;
+    listen [::]:${DEPLOY_SSL_PORT} ssl http2;
+    server_name ${DEPLOY_SERVER_NAME};
+
+    root ${DEPLOY_ROOT};
+    index index.html;
+
+    ssl_certificate ${DEPLOY_CERT_FULLCHAIN};
+    ssl_certificate_key ${DEPLOY_CERT_PRIVKEY};
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+
+    access_log /var/log/nginx/hk-03466-dividend-yield.access.log;
+    error_log /var/log/nginx/hk-03466-dividend-yield.error.log;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location /health {
+        access_log off;
+        add_header Content-Type text/plain;
+        return 200 "ok\n";
+    }
+}
