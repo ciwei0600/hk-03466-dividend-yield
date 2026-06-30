@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>03466.HK 股息率</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">HKEX 03466</p>
+          <h1>03466.HK 年化 TTM 股息率</h1>
+          <p class="subhead">按每日收盘价计算；TTM 不足 12 个月时，用最近单月股息补足到 12 个月。</p>
+        </div>
+        <div class="version">
+          <span>v0.1.0</span>
+          <span>2026-06-30 14:23 CST</span>
+        </div>
+      </header>
+
+      <section class="metrics" aria-label="关键指标">
+        <div class="metric">
+          <span class="label">最新日期</span>
+          <strong>2026-06-30</strong>
+        </div>
+        <div class="metric">
+          <span class="label">收盘价</span>
+          <strong>18.26 HKD</strong>
+        </div>
+        <div class="metric">
+          <span class="label">年化股息</span>
+          <strong>1.48 HKD</strong>
+        </div>
+        <div class="metric highlight">
+          <span class="label">年化股息率</span>
+          <strong>8.11%</strong>
+        </div>
+      </section>
+
+      <section class="chart-panel" aria-label="折线图">
+        <img src="./assets/03466_ttm_dividend_yield_daily_annualized.png" alt="03466.HK daily annualized TTM dividend yield line chart">
+      </section>
+
+      <section class="details">
+        <div>
+          <h2>计算口径</h2>
+          <p>对每个交易日，取截至该日已除息的最近最多 12 次月度分派；如果不足 12 次，则用最近一次月度分派补足剩余月份，再除以当日收盘价。</p>
+        </div>
+        <div>
+          <h2>数据来源</h2>
+          <p>收盘价来自 Data_Server 港股日线接口；派息表来自恒生投资官方结构化接口的 03466 HKD counter 快照。正式 Data_Server 派息入库工单为 <code>fcd695df-c1e0-4aa4-8ac5-617538509c8b</code>。</p>
+        </div>
+      </section>
+
+      <nav class="downloads" aria-label="下载">
+        <a href="./assets/03466_ttm_dividend_yield_daily_annualized.csv">下载逐日计算 CSV</a>
+        <a href="./assets/03466_dividends_source_hsi.csv">下载派息源数据 CSV</a>
+      </nav>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,51 @@
+# 03466.HK Dividend Yield Dashboard
+
+Static dashboard for 03466.HK daily annualized TTM dividend yield.
+
+## Version
+
+- Version: `0.1.0`
+- Updated: `2026-06-30 14:23 CST`
+
+## Data
+
+- Close prices: Data_Server `/v1/hk-equity-quotes`
+- Dividend snapshot: Hang Seng Investment official `etffunddetail` API, listed HKD counter 3466
+- Data_Server work order for formal HK ETP distributions: `fcd695df-c1e0-4aa4-8ac5-617538509c8b`
+
+## Calculation
+
+Daily dividend yield uses the annualized rule:
+
+```text
+annualized_dividend = sum(known monthly dividends) + latest_monthly_dividend * missing_months_to_12
+yield = annualized_dividend / daily_close
+```
+
+Before the first ex-dividend date, there is no current monthly dividend and no yield is plotted.
+
+## Local Preview
+
+```bash
+python3 -m http.server 8088
+```
+
+Open `http://127.0.0.1:8088/`.
+
+## Deploy
+
+Deployment must be GitHub-first:
+
+```bash
+git push
+ssh quant
+cd /opt/hk-03466-dividend-yield
+git pull --ff-only
+bash deploy/deploy-on-host.sh
+```
+
+Use environment variables on Quant when needed:
+
+```bash
+DEPLOY_PORT=80 DEPLOY_SERVER_NAME=03466-dividend.43.167.235.131.nip.io bash deploy/deploy-on-host.sh
+```

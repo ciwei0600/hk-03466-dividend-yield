@@ -1,0 +1,21 @@
+server {
+    listen ${DEPLOY_PORT};
+    listen [::]:${DEPLOY_PORT};
+    server_name ${DEPLOY_SERVER_NAME};
+
+    root ${DEPLOY_ROOT};
+    index index.html;
+
+    access_log /var/log/nginx/hk-03466-dividend-yield.access.log;
+    error_log /var/log/nginx/hk-03466-dividend-yield.error.log;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location /health {
+        access_log off;
+        add_header Content-Type text/plain;
+        return 200 "ok\n";
+    }
+}
