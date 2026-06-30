@@ -7,7 +7,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 export SCRIPT_DIR
 export DEPLOY_ROOT="${DEPLOY_ROOT:-${PROJECT_ROOT}}"
 export DEPLOY_PORT="${DEPLOY_PORT:-80}"
-export DEPLOY_SERVER_NAME="${DEPLOY_SERVER_NAME:-03466-dividend.43.167.235.131.nip.io}"
+export DEPLOY_SERVER_NAME="${DEPLOY_SERVER_NAME:-03466-dividend.cw-info.top}"
 
 python3 - <<'PY' | sudo tee /etc/nginx/sites-available/hk-03466-dividend-yield >/dev/null
 import os

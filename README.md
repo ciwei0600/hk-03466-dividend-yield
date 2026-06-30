@@ -4,8 +4,8 @@ Static dashboard for 03466.HK daily annualized TTM dividend yield.
 
 ## Version
 
-- Version: `0.4.1`
-- Updated: `2026-06-30 16:09 CST`
+- Version: `0.4.2`
+- Updated: `2026-06-30 16:12 CST`
 
 ## Data
 
@@ -59,5 +59,5 @@ bash deploy/deploy-on-host.sh
 Use environment variables on Quant when needed:
 
 ```bash
-DEPLOY_PORT=80 DEPLOY_SERVER_NAME=03466-dividend.43.167.235.131.nip.io bash deploy/deploy-on-host.sh
+DEPLOY_PORT=80 DEPLOY_SERVER_NAME=03466-dividend.cw-info.top bash deploy/deploy-on-host.sh
 ```
