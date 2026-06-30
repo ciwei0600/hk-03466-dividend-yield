@@ -111,6 +111,100 @@ h1 {
   margin-bottom: 22px;
 }
 
+.chart-wrap {
+  position: relative;
+  min-height: 360px;
+}
+
+#yieldChart {
+  display: block;
+  width: 100%;
+  min-height: 360px;
+  touch-action: manipulation;
+}
+
+.chart-grid line {
+  stroke: #d3d9d8;
+  stroke-width: 1;
+}
+
+.chart-axis text {
+  fill: #566166;
+  font-size: 13px;
+}
+
+.chart-area {
+  fill: rgba(31, 111, 139, 0.12);
+}
+
+.chart-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+.chart-overlay {
+  cursor: crosshair;
+  fill: transparent;
+  pointer-events: all;
+}
+
+.hit-layer circle {
+  cursor: pointer;
+  fill: transparent;
+  pointer-events: all;
+}
+
+.hit-layer circle:focus {
+  outline: none;
+  stroke: var(--warn);
+  stroke-width: 2;
+}
+
+.selected-guide {
+  stroke: var(--warn);
+  stroke-dasharray: 4 4;
+  stroke-width: 1.2;
+}
+
+.selected-point {
+  fill: #c42c2c;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.point-readout {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--line);
+  margin-top: 12px;
+}
+
+.point-readout > div {
+  min-height: 74px;
+  padding: 13px 14px;
+  background: #fbfcfa;
+}
+
+.point-readout .label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.point-readout strong {
+  display: block;
+  font-size: clamp(17px, 2.2vw, 22px);
+  line-height: 1.2;
+}
+
 .chart-panel img {
   display: block;
   width: 100%;
@@ -184,6 +278,10 @@ code {
     grid-template-columns: 1fr 1fr;
   }
 
+  .point-readout {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .metric {
     min-height: 92px;
     padding: 14px;
@@ -192,6 +290,10 @@ code {
 
 @media (max-width: 460px) {
   .metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .point-readout {
     grid-template-columns: 1fr;
   }
 }

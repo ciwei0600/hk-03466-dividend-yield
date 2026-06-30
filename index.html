@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>03466.HK 股息率</title>
     <link rel="stylesheet" href="./styles.css">
+    <script src="./app.js" defer></script>
   </head>
   <body>
     <main class="shell">
@@ -15,8 +16,8 @@
           <p class="subhead">按每日收盘价计算；TTM 不足 12 个月时，用最近单月股息补足到 12 个月。</p>
         </div>
         <div class="version">
-          <span>v0.1.0</span>
-          <span>2026-06-30 14:23 CST</span>
+          <span>v0.2.0</span>
+          <span>2026-06-30 15:46 CST</span>
         </div>
       </header>
 
@@ -40,7 +41,30 @@
       </section>
 
       <section class="chart-panel" aria-label="折线图">
-        <img src="./assets/03466_ttm_dividend_yield_daily_annualized.png" alt="03466.HK daily annualized TTM dividend yield line chart">
+        <div class="chart-wrap">
+          <svg id="yieldChart" role="img" aria-label="03466.HK daily annualized TTM dividend yield interactive line chart"></svg>
+        </div>
+        <div class="point-readout" id="pointReadout" aria-live="polite">
+          <div>
+            <span class="label">选中日期</span>
+            <strong data-field="trade_date">-</strong>
+          </div>
+          <div>
+            <span class="label">收盘价</span>
+            <strong data-field="close">-</strong>
+          </div>
+          <div>
+            <span class="label">年化股息</span>
+            <strong data-field="annualized_dividend_hkd">-</strong>
+          </div>
+          <div>
+            <span class="label">股息率</span>
+            <strong data-field="annualized_dividend_yield_pct">-</strong>
+          </div>
+        </div>
+        <noscript>
+          <img src="./assets/03466_ttm_dividend_yield_daily_annualized.png" alt="03466.HK daily annualized TTM dividend yield line chart">
+        </noscript>
       </section>
 
       <section class="details">
