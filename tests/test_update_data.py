@@ -1,4 +1,6 @@
 import importlib.util
+import json
+import tempfile
 import unittest
 from datetime import date
 from pathlib import Path
@@ -73,6 +75,66 @@ class ConstituentParsingTests(unittest.TestCase):
         added, removed = update_data.compare_constituents(previous, current)
         self.assertEqual([row["symbol"] for row in added], ["00003"])
         self.assertEqual([row["symbol"] for row in removed], ["00001"])
+
+    def test_latest_change_survives_a_later_no_change_sync(self):
+        previous = [
+            {"symbol": str(index).zfill(5), "name": f"Company {index}", "share_type": "O"}
+            for index in range(1, 31)
+        ]
+        current = previous[1:] + [
+            {"symbol": "00031", "name": "Company 31", "share_type": "O"}
+        ]
+        metadata = {
+            "index_symbol": "HSHD30",
+            "index_name": "Hang Seng High Dividend 30 Index",
+            "official_updated_at": "2026-09-08 16:30:00",
+            "official_request_at": "2026-09-08 16:31:00",
+            "constituent_count": 30,
+        }
+
+        original_output_dir = update_data.OUTPUT_DIR
+        original_assets_dir = update_data.ASSETS_DIR
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            temporary_root = Path(temporary_directory)
+            runtime_dir = temporary_root / "runtime-data"
+            assets_dir = temporary_root / "assets"
+            runtime_dir.mkdir()
+            assets_dir.mkdir()
+            update_data.write_csv(
+                assets_dir / "03466_hshd30_constituents_hsi.csv",
+                previous,
+                ["symbol", "name", "share_type"],
+            )
+            try:
+                update_data.OUTPUT_DIR = runtime_dir
+                update_data.ASSETS_DIR = assets_dir
+                added, removed = update_data.write_constituent_snapshot(metadata, current)
+                self.assertEqual([row["symbol"] for row in added], ["00031"])
+                self.assertEqual([row["symbol"] for row in removed], ["00001"])
+
+                first_summary = json.loads(
+                    (runtime_dir / "constituents_summary.json").read_text(encoding="utf-8")
+                )
+                self.assertEqual(first_summary["latest_change"]["added"][0]["symbol"], "00031")
+
+                later_metadata = {
+                    **metadata,
+                    "official_request_at": "2026-09-09 07:10:00",
+                }
+                added, removed = update_data.write_constituent_snapshot(later_metadata, current)
+                self.assertEqual(added, [])
+                self.assertEqual(removed, [])
+
+                later_summary = json.loads(
+                    (runtime_dir / "constituents_summary.json").read_text(encoding="utf-8")
+                )
+                self.assertEqual(later_summary["added_since_previous"], [])
+                self.assertEqual(later_summary["removed_since_previous"], [])
+                self.assertEqual(later_summary["latest_change"]["added"][0]["symbol"], "00031")
+                self.assertEqual(later_summary["latest_change"]["removed"][0]["symbol"], "00001")
+            finally:
+                update_data.OUTPUT_DIR = original_output_dir
+                update_data.ASSETS_DIR = original_assets_dir
 
 
 class PriceNormalizationTests(unittest.TestCase):

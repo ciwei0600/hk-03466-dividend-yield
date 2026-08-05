@@ -21,6 +21,7 @@
 - Index: Hang Seng High Dividend 30 Index (`HSHD30`)
 - Source: Hang Seng Indexes official public `constituents.do` endpoint, fetched directly once daily at `07:10 CST`
 - Validation: `seriesCode=hshd30`, declared count `30`, exactly 30 unique constituent symbols
+- Successful snapshots are compared by stock code. Additions/removals are appended to `constituent_changes.json`; the latest event remains in `constituents_summary.json` so the page keeps showing it after later no-change syncs.
 - Data_Server request `471ba741-c8c2-4165-b78a-0d5b35273725` was rejected after the user explicitly chose direct official sourcing; it is not a project dependency.
 
 ## Calculation

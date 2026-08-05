@@ -22,6 +22,7 @@ const constituentTableBody = document.querySelector("#constituentTableBody");
 const constituentStatus = document.querySelector("#constituentStatus");
 const constituentCount = document.querySelector("#constituentCount");
 const constituentUpdatedAt = document.querySelector("#constituentUpdatedAt");
+const constituentSyncedAt = document.querySelector("#constituentSyncedAt");
 const constituentChanges = document.querySelector("#constituentChanges");
 
 let rows = [];
@@ -110,23 +111,58 @@ function formatOfficialTime(value) {
   return `${String(value).slice(0, 16)} HKT`;
 }
 
+function formatSyncedTime(value) {
+  if (!value) return "-";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "-";
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("zh-CN", {
+      timeZone: "Asia/Hong_Kong",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(parsed).map((part) => [part.type, part.value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute} HKT`;
+}
+
 function formatConstituentList(items) {
   return items.map((item) => `${item.symbol} ${item.name}`).join("、");
+}
+
+function formatConstituentChange(event) {
+  const parts = [];
+  const added = event.added || [];
+  const removed = event.removed || [];
+  if (added.length) parts.push(`新增：${formatConstituentList(added)}`);
+  if (removed.length) parts.push(`剔除：${formatConstituentList(removed)}`);
+  return parts.join("；");
 }
 
 function renderConstituentChanges(summary) {
   const added = summary.added_since_previous || [];
   const removed = summary.removed_since_previous || [];
+  constituentChanges.classList.remove("has-change");
+  constituentChanges.dataset.changeState = "none";
   if (added.length || removed.length) {
-    const parts = [];
-    if (added.length) parts.push(`新增：${formatConstituentList(added)}`);
-    if (removed.length) parts.push(`剔除：${formatConstituentList(removed)}`);
-    constituentChanges.textContent = parts.join("；");
+    constituentChanges.textContent = `本次同步发现成分股变更（官网资料时间 ${formatOfficialTime(summary.official_updated_at)}）：${formatConstituentChange({ added, removed })}`;
     constituentChanges.classList.add("has-change");
+    constituentChanges.dataset.changeState = "current";
+    return;
+  }
+  const latestChange = summary.latest_change;
+  if (latestChange && ((latestChange.added || []).length || (latestChange.removed || []).length)) {
+    constituentChanges.textContent = `本次同步无变化。最近一次变更（官网资料时间 ${formatOfficialTime(latestChange.official_updated_at)}）：${formatConstituentChange(latestChange)}`;
+    constituentChanges.classList.add("has-change");
+    constituentChanges.dataset.changeState = "history";
     return;
   }
   if (summary.comparison_basis === "none") {
     constituentChanges.textContent = "已建立首个官网基准快照，后续同步将自动记录新增与剔除。";
+    constituentChanges.dataset.changeState = "baseline";
     return;
   }
   constituentChanges.textContent = "与上一次成功快照相比，未发现成分股变更。";
@@ -143,6 +179,7 @@ async function initConstituents() {
   constituentStatus.classList.toggle("is-warning", !isSynced);
   constituentCount.textContent = `${snapshot.rows.length} / ${expectedCount}`;
   constituentUpdatedAt.textContent = formatOfficialTime(snapshot.summary.official_updated_at);
+  constituentSyncedAt.textContent = formatSyncedTime(snapshot.summary.synced_at);
   constituentCsvLink.href = snapshot.source.constituents;
   renderConstituentChanges(snapshot.summary);
 

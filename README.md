@@ -4,8 +4,8 @@ Static dashboard for 03466.HK daily annualized TTM dividend yield and official H
 
 ## Version
 
-- Version: `0.5.1`
-- Updated: `2026-08-05 14:25 CST`
+- Version: `0.5.2`
+- Updated: `2026-08-05 14:38 CST`
 
 ## Data
 
@@ -35,7 +35,7 @@ On Quant, deployment installs two independent jobs:
 10 7 * * * python3 scripts/update-data.py --constituents-only
 ```
 
-The weekday job refreshes close prices from Data_Server and listed-class distributions directly from Hang Seng Investment after market close. Distribution rows are rejected if they predate the `2025-04-07` listing date, use a non-HKD currency, or repeat an ex-dividend date. Price rows are reduced to one row per trade date; conflicting same-day closes fail the update instead of silently changing the chart. The daily constituent job directly checks the Hang Seng Indexes official endpoint once at `07:10 CST`.
+The weekday job refreshes close prices from Data_Server and listed-class distributions directly from Hang Seng Investment after market close. Distribution rows are rejected if they predate the `2025-04-07` listing date, use a non-HKD currency, or repeat an ex-dividend date. Price rows are reduced to one row per trade date; conflicting same-day closes fail the update instead of silently changing the chart. The daily constituent job directly checks the Hang Seng Indexes official endpoint once at `07:10 CST`. The page shows the latest sync time, highlights additions/removals on the detecting run, and keeps the most recent recorded change visible on later no-change runs.
 
 ## Local Preview
 

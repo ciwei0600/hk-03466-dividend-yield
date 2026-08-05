@@ -46,7 +46,7 @@ def fetch_json(url: str, *, params: dict[str, str] | None = None, headers: dict[
         url,
         headers={
             "Accept": "application/json",
-            "User-Agent": "hk-03466-dividend-yield/0.5.1",
+            "User-Agent": "hk-03466-dividend-yield/0.5.2",
             **(headers or {}),
         },
     )
