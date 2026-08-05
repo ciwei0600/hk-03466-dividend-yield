@@ -8,7 +8,7 @@
 
 - App 部署位置：Quant VPS
 - 运行目录：`/opt/hk-03466-dividend-yield`
-- 访问方式：DNS 由用户配置；当前先用 `03466-dividend.43.167.235.131.nip.io` 验证
+- 正式访问地址：`https://03466-dividend.cw-info.top/`
 - 结果库/展示库：无数据库，静态资产随版本发布
 
 ## 标准架构
