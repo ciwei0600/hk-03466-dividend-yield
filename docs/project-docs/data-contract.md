@@ -19,8 +19,13 @@
 ## Constituent Data
 
 - Index: Hang Seng High Dividend 30 Index (`HSHD30`)
-- Source: Hang Seng Indexes official public `constituents.do` endpoint, fetched directly once daily at `07:10 CST`
-- Validation: `seriesCode=hshd30`, declared count `30`, exactly 30 unique constituent symbols
+- Membership source: Hang Seng Indexes official public `constituents.do` endpoint
+- Portfolio-weight source: Hang Seng Investment official 03466 portfolio composition `H0E329.xml`
+- Company-profile source: HKEX official equity quote profile in Simplified Chinese; HKEX identifies LSEG Data & Analytics as the profile provider
+- All three official sources are fetched directly once daily at `07:10 CST`; Data_Server is not used for constituents, weights, company names or business introductions
+- Codes are normalized to a five-digit `symbol` and a complete `full_symbol` such as `00371.HK`
+- Validation: `seriesCode=hshd30`, exactly 30 unique symbols in both membership and portfolio files, exact symbol-set equality, positive holding weights reconciling to the official stock allocation, and 30 non-empty HKEX company profiles
+- A failed source, count mismatch, duplicate code, membership/portfolio mismatch, invalid weight or missing business introduction aborts the entire update and preserves the previous successful snapshot
 - Successful snapshots are compared by stock code. Additions/removals are appended to `constituent_changes.json`; the latest event remains in `constituents_summary.json` so the page keeps showing it after later no-change syncs.
 - Data_Server request `471ba741-c8c2-4165-b78a-0d5b35273725` was rejected after the user explicitly chose direct official sourcing; it is not a project dependency.
 

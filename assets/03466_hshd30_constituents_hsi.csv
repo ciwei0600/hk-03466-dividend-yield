@@ -1,31 +1,31 @@
-symbol,name,share_type
-00371,BJ ENT WATER,R
-03998,BOSIDENG,O
-01876,BUD APAC,O
-01908,C&D INTL GROUP,O
-00293,CATHAY PAC AIR,O
-06818,CEB BANK,H
-06186,CHINA FEIHE,O
-00384,CHINA GAS HOLD,O
-00836,CHINA RES POWER,R
-03311,CHINA STATE CON,R
-01919,COSCO SHIP HOLD,H
-03360,FE HORIZON,O
-00101,HANG LUNG PPT,O
-01044,HENGAN INT'L,O
-00902,HUANENG POWER,H
-00683,KERRY PPT,O
-01999,MAN WAH HLDGS,O
-02282,MGM CHINA,O
-02602,ONEWO,H
-00316,OOIL,O
-00008,PCCW,O
-00152,SHENZHEN INT'L,R
-01308,SITC,O
-06110,TOPSPORTS,O
-00220,U-PRESID CHINA,O
-00303,VTECH HOLDINGS,O
-00288,WH GROUP,O
-01128,WYNN MACAU,O
-01368,XTEP INT'L,O
-00551,YUE YUEN IND,O
+symbol,full_symbol,company_name_zh,name,share_type,weight_pct,fund_name,fund_name_zh,sector,sector_zh,industry_zh,business_summary,profile_updated_at
+00303,00303.HK,VTECH HOLDINGS,VTECH HOLDINGS,O,4.41,VTECH HOLDINGS,VTECH HOLDINGS,Information Technology,资讯科技业,消费性电讯设备,伟易达集团有限公司是一家主要从事电子产品业务的香港投资控股公司。,2026年8月5日09:36
+00551,00551.HK,裕元集团,YUE YUEN IND,O,4.3,YUE YUEN IND,裕元集团,Consumer Discretionary,非必需性消费,鞋类,裕元工业（集团）有限公司是一家主要从事制造及销售鞋类产品的投资控股公司。,2026年8月5日09:36
+06186,06186.HK,中国飞鹤,CHINA FEIHE,O,4.06,CHINA FEIHE,中国飞鹤,Consumer Staples,必需性消费,乳制品,中国飞鹤有限公司是一家主要从事乳制品及原料奶的生产及销售，以及营养补充剂销售的公司。,2026年8月5日09:36
+00152,00152.HK,深圳国际,SHENZHEN INT'L,R,4.05,SHENZHEN INT'L,深圳国际,Industrials,工业,铁路及公路,深圳国际控股有限公司是一家主要从事收费公路及大环保业务的投资控股公司。,2026年8月5日09:36
+02602,02602.HK,万物云,ONEWO,H,3.93,ONEWO,万物云,Properties  and  Construction,地产建筑业,物业服务及管理,万物云空间科技服务股份有限公司是一家主要从事提供物业管理服务的中国公司。,2026年8月5日09:36
+03360,03360.HK,远东宏信,FE HORIZON,O,3.79,FE HORIZON,远东宏信,Financials,金融业,信贷,远东宏信有限公司是一家主要提供金融服务的公司。,2026年8月5日09:36
+01308,01308.HK,海丰国际,SITC,O,3.73,SITC,海丰国际,Industrials,工业,航运及港口,海丰国际控股有限公司是一家主要从事提供综合运输及物流解决方案业务的投资控股公司。,2026年8月5日09:36
+01919,01919.HK,中远海控,COSCO SHIP HOLD,H,3.7,COSCO SHIP HOLD,中远海控,Industrials,工业,航运及港口,中远海运控股股份有限公司（原名：中国远洋控股股份有限公司）是一家主要从事集装箱航运业务的中国公司。,2026年8月5日09:36
+00293,00293.HK,国泰航空,CATHAY PAC AIR,O,3.69,CATHAY PAC AIR,国泰航空,Consumer Discretionary,非必需性消费,航空服务,国泰航空有限公司是一家主要提供国际空中客运及货运服务的公司。,2026年8月5日09:36
+03311,03311.HK,中国建筑国际,CHINA STATE CON,R,3.53,CHINA STATE CON,中国建筑国际,Properties  and  Construction,地产建筑业,重型基建,中国建筑国际集团有限公司是一间主要从事建筑业务的投资控股公司。,2026年8月5日09:36
+00316,00316.HK,东方海外国际,OOIL,O,3.52,OOIL,东方海外国际,Industrials,工业,航运及港口,东方海外（国际）有限公司是一家主要从事货柜运输及物流业务的投资控股公司。,2026年8月5日09:36
+01128,01128.HK,永利澳门,WYNN MACAU,O,3.51,WYNN MACAU,永利澳门,Consumer Discretionary,非必需性消费,赌场及博彩,永利澳门有限公司是一家主要从事经营娱乐场度假村业务的控股公司。,2026年8月5日09:36
+03998,03998.HK,波司登,BOSIDENG,O,3.51,BOSIDENG,波司登,Consumer Discretionary,非必需性消费,服装,波司登国际控股有限公司是一家主要从事羽绒服品牌组合的开发和管理的控股公司。,2026年8月5日09:36
+01044,01044.HK,恒安国际,HENGAN INT'L,O,3.46,HENGAN INT'L,恒安国际,Consumer Staples,必需性消费,个人护理,恒安国际集团有限公司是一家主要从事制造、分销和出售个人卫生用品的投资控股公司。,2026年8月5日09:36
+00008,00008.HK,电讯盈科,PCCW,O,3.32,PCCW,电讯盈科,Telecommunications,电讯业,电讯服务,电讯盈科有限公司是一家主要提供科技及电讯服务的投资控股公司。,2026年8月5日09:36
+00683,00683.HK,嘉里建设,KERRY PPT,O,3.31,KERRY PPT,嘉里建设,Properties  and  Construction,地产建筑业,地产发展商,嘉里建设有限公司是一家主要从事物业业务的投资控股公司。,2026年8月5日09:36
+00288,00288.HK,万洲国际,WH GROUP,O,3.28,WH GROUP,万洲国际,Consumer Staples,必需性消费,包装食品,万洲国际有限公司是一家主要从事猪肉业务的投资控股公司。,2026年8月5日09:36
+00101,00101.HK,恒隆地产,HANG LUNG PPT,O,3.27,HANG LUNG PPT,恒隆地产,Properties  and  Construction,地产建筑业,地产投资,恒隆地产有限公司是一家主要从事物业租赁的投资控股公司。,2026年8月5日09:36
+00384,00384.HK,中国燃气,CHINA GAS HOLD,O,3.24,CHINA GAS HOLD,中国燃气,Utilities,公用事业,燃气供应,中国燃气控股有限公司是一家主要从事燃气业务的投资控股公司。,2026年8月5日09:36
+01999,01999.HK,敏华控股,MAN WAH HLDGS,O,3.18,MAN WAH HLDGS,敏华控股,Consumer Discretionary,非必需性消费,家具,敏华控股有限公司是一家从事制造和销售沙发及配套产品的投资控股公司。,2026年8月5日09:36
+00371,00371.HK,北控水务集团,BJ ENT WATER,R,3.07,BJ ENT WATER,北控水务集团,Utilities,公用事业,水务,北控水务集团有限公司是一家主要从事水务业务的公司。,2026年8月5日09:36
+01876,01876.HK,百威亚太,BUD APAC,O,3.04,BUD APAC,百威亚太,Consumer Staples,必需性消费,酒精饮料,百威亚太控股有限公司是一家主要从事啤酒酿造及经销的投资控股公司。,2026年8月5日09:36
+06818,06818.HK,中国光大银行,CEB BANK,H,2.91,CEB BANK,中国光大银行,Financials,金融业,银行,中国光大银行股份有限公司是一家商业银行。,2026年8月5日09:36
+00220,00220.HK,统一企业中国,U-PRESID CHINA,O,2.89,U-PRESID CHINA,统一企业中国,Consumer Staples,必需性消费,非酒精饮料,统一企业中国控股有限公司是一家主要从事饮料和食品生产和销售的投资控股公司。,2026年8月5日09:36
+01908,01908.HK,建发国际集团,C&D INTL GROUP,O,2.84,C and D INTL GROUP,建发国际集团,Properties  and  Construction,地产建筑业,地产发展商,建发国际投资集团有限公司是一家主要从事物业开发、房地产产业链投资服务及新兴产业投资业务投资控股的公司。,2026年8月5日09:36
+02282,02282.HK,美高梅中国,MGM CHINA,O,2.83,MGM CHINA,美高梅中国,Consumer Discretionary,非必需性消费,赌场及博彩,美高梅中国控股有限公司为主要从事经营娱乐场幸运博彩业务的投资控股公司。,2026年8月5日09:36
+01368,01368.HK,特步国际,XTEP INT'L,O,2.69,XTEP INT'L,特步国际,Consumer Discretionary,非必需性消费,鞋类,特步国际控股有限公司是一家主要从事体育用品的设计、研发、制造、销售、营销及品牌管理的公司。,2026年8月5日09:36
+00836,00836.HK,华润电力,CHINA RES POWER,R,2.5,CHINA RES POWER,华润电力,Utilities,公用事业,常规电力,华润电力控股有限公司是一家主要从事电厂的投资、开发及经营业务的投资控股公司。,2026年8月5日09:36
+00902,00902.HK,华能国际电力股份,HUANENG POWER,H,2.35,HUANENG POWER,华能国际电力股份,Utilities,公用事业,常规电力,华能国际电力股份有限公司是一家主要从事发电业务并销售电力的中国公司。,2026年8月5日09:36
+06110,06110.HK,滔搏,TOPSPORTS,O,1.21,TOPSPORTS,滔搏,Consumer Discretionary,非必需性消费,服装零售商,滔搏国际控股有限公司是一家主要从事运动鞋服产品贸易的投资控股公司。,2026年8月5日09:36

@@ -3,12 +3,15 @@ from __future__ import annotations
 
 import argparse
 import csv
+import html
 import json
 import os
+import re
 import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -37,26 +40,59 @@ HSI_INDEX_CONSTITUENTS_URL = (
     f"https://www.hsi.com.hk/data/eng/rt/index-series/{HSI_INDEX_CODE}/constituents.do"
 )
 HSI_INDEX_PAGE_URL = "https://www.hsi.com.hk/eng/indexes/all-indexes/hshd30"
+HSI_HOLDINGS_URL = "https://cms.hangsenginvestment.com/cms/ivp/hsvm/listed/composition/H0E329.xml"
+HKEX_QUOTE_API_URL = "https://www1.hkex.com.hk/hkexwidget/data/getequityquote"
+HKEX_QUOTE_PAGE_URL = (
+    "https://www.hkex.com.hk/Market-Data/Securities-Prices/Equities/Equities-Quote"
+)
+USER_AGENT = "hk-03466-dividend-yield/0.6.0"
 
 
-def fetch_json(url: str, *, params: dict[str, str] | None = None, headers: dict[str, str] | None = None) -> Any:
+def fetch_bytes(
+    url: str,
+    *,
+    params: dict[str, str] | None = None,
+    headers: dict[str, str] | None = None,
+    accept: str = "*/*",
+) -> bytes:
     if params:
         url = f"{url}?{urllib.parse.urlencode(params)}"
     request = urllib.request.Request(
         url,
         headers={
-            "Accept": "application/json",
-            "User-Agent": "hk-03466-dividend-yield/0.5.3",
+            "Accept": accept,
+            "User-Agent": USER_AGENT,
             **(headers or {}),
         },
     )
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
-            charset = response.headers.get_content_charset() or "utf-8"
-            return json.loads(response.read().decode(charset))
+            return response.read()
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"HTTP {exc.code} from {url}: {body[:300]}") from exc
+        safe_url = re.sub(r"([?&]token=)[^&]+", r"\1[redacted]", url)
+        raise RuntimeError(f"HTTP {exc.code} from {safe_url}: {body[:300]}") from exc
+
+
+def fetch_text(
+    url: str,
+    *,
+    params: dict[str, str] | None = None,
+    headers: dict[str, str] | None = None,
+    accept: str = "text/plain,*/*",
+) -> str:
+    return fetch_bytes(url, params=params, headers=headers, accept=accept).decode("utf-8")
+
+
+def fetch_json(
+    url: str,
+    *,
+    params: dict[str, str] | None = None,
+    headers: dict[str, str] | None = None,
+) -> Any:
+    return json.loads(
+        fetch_text(url, params=params, headers=headers, accept="application/json")
+    )
 
 
 def parse_date(value: str) -> date:
@@ -173,7 +209,7 @@ def fetch_dividends() -> list[dict[str, Any]]:
     return parsed
 
 
-def fetch_constituents() -> tuple[dict[str, Any], list[dict[str, str]]]:
+def fetch_index_constituents() -> tuple[dict[str, Any], list[dict[str, str]]]:
     payload = fetch_json(
         HSI_INDEX_CONSTITUENTS_URL,
         params={"_": str(int(datetime.now(timezone.utc).timestamp()))},
@@ -216,6 +252,242 @@ def fetch_constituents() -> tuple[dict[str, Any], list[dict[str, str]]]:
         "constituent_count": len(rows),
     }
     return metadata, rows
+
+
+def parse_percentage(value: str | None, field_name: str) -> float:
+    normalized = str(value or "").strip()
+    if not normalized.endswith("%"):
+        raise RuntimeError(f"Hang Seng Investment {field_name} is not a percentage: {normalized}")
+    try:
+        parsed = float(normalized[:-1].replace(",", ""))
+    except ValueError as exc:
+        raise RuntimeError(
+            f"Hang Seng Investment {field_name} is not numeric: {normalized}"
+        ) from exc
+    if parsed < 0 or parsed > 100:
+        raise RuntimeError(f"Hang Seng Investment {field_name} is out of range: {parsed}")
+    return parsed
+
+
+def xml_text(element: ET.Element, name: str) -> str:
+    return str(element.findtext(name) or "").strip()
+
+
+def parse_holdings_xml(payload: bytes) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    try:
+        root = ET.fromstring(payload)
+    except ET.ParseError as exc:
+        raise RuntimeError("Hang Seng Investment portfolio composition XML is invalid") from exc
+    if root.tag != "ETFS":
+        raise RuntimeError(f"Unexpected Hang Seng Investment XML root: {root.tag}")
+
+    try:
+        declared_count = int(xml_text(root, "Number_of_Stocks").replace(",", ""))
+    except ValueError as exc:
+        raise RuntimeError("Hang Seng Investment portfolio has no valid stock count") from exc
+    if declared_count != 30:
+        raise RuntimeError(
+            f"Hang Seng Investment portfolio declared stock count is {declared_count}, expected 30"
+        )
+    if xml_text(root, "Base_Currency") != "HKD":
+        raise RuntimeError("Hang Seng Investment portfolio base currency is not HKD")
+    if not xml_text(root, "Stock_Code").startswith("3466_"):
+        raise RuntimeError("Hang Seng Investment portfolio is not the 03466 fund")
+
+    rows: list[dict[str, Any]] = []
+    for item in root.findall("ETF"):
+        code_match = re.fullmatch(r"(\d{1,5})\s+HK", xml_text(item, "StockCode"))
+        if code_match is None:
+            raise RuntimeError(
+                f"Hang Seng Investment portfolio has an invalid HK stock code: {xml_text(item, 'StockCode')}"
+            )
+        symbol = code_match.group(1).zfill(5)
+        weight_pct = parse_percentage(xml_text(item, "Weight"), f"weight for {symbol}")
+        if weight_pct <= 0:
+            raise RuntimeError(f"Hang Seng Investment portfolio weight is not positive for {symbol}")
+        name = xml_text(item, "StockName")
+        if not name:
+            raise RuntimeError(f"Hang Seng Investment portfolio has no name for {symbol}")
+        rows.append(
+            {
+                "symbol": symbol,
+                "full_symbol": f"{symbol}.HK",
+                "fund_name": name,
+                "fund_name_zh": xml_text(item, "StockName_ts") or name,
+                "sector": xml_text(item, "Sector"),
+                "sector_zh": xml_text(item, "Sector_ts") or xml_text(item, "Sector"),
+                "weight_pct": weight_pct,
+            }
+        )
+
+    symbols = [row["symbol"] for row in rows]
+    if len(rows) != declared_count or len(set(symbols)) != declared_count:
+        raise RuntimeError(
+            "Hang Seng Investment portfolio validation failed: "
+            f"rows={len(rows)}, unique_symbols={len(set(symbols))}"
+        )
+    stock_asset_pct = parse_percentage(xml_text(root, "Stock_Asset"), "stock asset")
+    cash_equivalent_pct = parse_percentage(
+        xml_text(root, "Cash_Equivalent_Asset"), "cash equivalent asset"
+    )
+    weight_total_pct = round(sum(row["weight_pct"] for row in rows), 2)
+    if abs(weight_total_pct - stock_asset_pct) > 0.20:
+        raise RuntimeError(
+            "Hang Seng Investment portfolio weights do not reconcile: "
+            f"rows={weight_total_pct:.2f}%, stock_asset={stock_asset_pct:.2f}%"
+        )
+    if abs(stock_asset_pct + cash_equivalent_pct - 100) > 0.05:
+        raise RuntimeError(
+            "Hang Seng Investment stock and cash allocation does not reconcile to 100%"
+        )
+
+    as_of_raw = xml_text(root, "As_of_date")
+    try:
+        as_of = datetime.strptime(as_of_raw, "%d %b %Y").date().isoformat()
+    except ValueError as exc:
+        raise RuntimeError(
+            f"Hang Seng Investment portfolio has an invalid as-of date: {as_of_raw}"
+        ) from exc
+    metadata = {
+        "holdings_as_of": as_of,
+        "holdings_count": len(rows),
+        "stock_asset_pct": stock_asset_pct,
+        "cash_equivalent_pct": cash_equivalent_pct,
+        "holding_weight_total_pct": weight_total_pct,
+    }
+    return metadata, rows
+
+
+def fetch_fund_holdings() -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    payload = fetch_bytes(
+        HSI_HOLDINGS_URL,
+        headers={"Referer": HSI_ETF_PAGE_URL},
+        accept="application/xml,text/xml,*/*",
+    )
+    return parse_holdings_xml(payload)
+
+
+def clean_profile_text(value: str | None) -> str:
+    text = html.unescape(str(value or ""))
+    text = re.sub(r"<[^>]+>", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def summarize_business(summary: str) -> str:
+    first_sentence = re.split(r"(?<=[。！？])", summary, maxsplit=1)[0].strip()
+    if not first_sentence:
+        raise RuntimeError("HKEX company profile has no usable business summary")
+    if len(first_sentence) > 120:
+        return first_sentence[:119].rstrip("，,；; ") + "…"
+    return first_sentence
+
+
+def parse_hkex_profile(payload: str, expected_symbol: str) -> dict[str, str]:
+    match = re.fullmatch(r"\s*[^()]+\((.*)\)\s*;?\s*", payload, flags=re.DOTALL)
+    if match is None:
+        raise RuntimeError(f"HKEX returned invalid profile JSONP for {expected_symbol}")
+    try:
+        result = json.loads(match.group(1))
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"HKEX returned invalid profile JSON for {expected_symbol}") from exc
+    data = result.get("data") or {}
+    quote = data.get("quote") or {}
+    if str(data.get("responsecode")) != "000" or quote.get("product_type") != "EQTY":
+        raise RuntimeError(f"HKEX returned no equity profile for {expected_symbol}")
+    actual_symbol = str(quote.get("sym") or "").zfill(5)
+    if actual_symbol != expected_symbol:
+        raise RuntimeError(
+            f"HKEX profile symbol mismatch: expected {expected_symbol}, got {actual_symbol}"
+        )
+    company_name_zh = clean_profile_text(
+        quote.get("nm_s") or quote.get("nm") or quote.get("issuer_name")
+    )
+    full_summary = clean_profile_text(quote.get("summary"))
+    if not company_name_zh or not full_summary:
+        raise RuntimeError(f"HKEX profile is missing company name or summary for {expected_symbol}")
+    return {
+        "company_name_zh": company_name_zh,
+        "business_summary": summarize_business(full_summary),
+        "industry_zh": clean_profile_text(
+            quote.get("hsic_sub_sector_classification")
+            or quote.get("hsic_ind_classification")
+        ),
+        "profile_updated_at": clean_profile_text(quote.get("db_updatetime")),
+    }
+
+
+def fetch_hkex_access_token() -> str:
+    page = fetch_text(
+        HKEX_QUOTE_PAGE_URL,
+        params={"sc_lang": "zh-CN", "sym": "371"},
+        accept="text/html,application/xhtml+xml",
+    )
+    function_match = re.search(
+        r"LabCI\.getToken\s*=\s*function\s*\(\)\s*\{(.*?)\};",
+        page,
+        flags=re.DOTALL,
+    )
+    if function_match is None:
+        raise RuntimeError("HKEX quote page has no public widget access-token function")
+    tokens = re.findall(
+        r"^[ \t]*return\s+[\"']([^\"']+)[\"']\s*;",
+        function_match.group(1),
+        flags=re.MULTILINE,
+    )
+    if not tokens:
+        raise RuntimeError("HKEX quote page has no public widget access token")
+    return tokens[0]
+
+
+def fetch_hkex_profile(symbol: str, token: str) -> dict[str, str]:
+    callback = "hkexProfileCallback"
+    payload = fetch_text(
+        HKEX_QUOTE_API_URL,
+        params={
+            "sym": str(int(symbol)),
+            "lang": "chn",
+            "token": token,
+            "qid": symbol,
+            "callback": callback,
+        },
+        headers={
+            "Referer": f"{HKEX_QUOTE_PAGE_URL}?sc_lang=zh-CN&sym={int(symbol)}",
+            "Origin": "https://www.hkex.com.hk",
+        },
+        accept="application/javascript,application/json,*/*",
+    )
+    return parse_hkex_profile(payload, symbol)
+
+
+def fetch_constituents() -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    index_metadata, index_rows = fetch_index_constituents()
+    holdings_metadata, holdings = fetch_fund_holdings()
+    index_by_symbol = {row["symbol"]: row for row in index_rows}
+    holding_symbols = {row["symbol"] for row in holdings}
+    index_symbols = set(index_by_symbol)
+    if holding_symbols != index_symbols:
+        missing_from_holdings = sorted(index_symbols - holding_symbols)
+        missing_from_index = sorted(holding_symbols - index_symbols)
+        raise RuntimeError(
+            "Official constituent and 03466 portfolio symbols do not match: "
+            f"missing_from_holdings={missing_from_holdings}, missing_from_index={missing_from_index}"
+        )
+
+    token = fetch_hkex_access_token()
+    merged: list[dict[str, Any]] = []
+    for holding in holdings:
+        index_row = index_by_symbol[holding["symbol"]]
+        profile = fetch_hkex_profile(holding["symbol"], token)
+        merged.append({**index_row, **holding, **profile})
+    merged.sort(key=lambda row: (-row["weight_pct"], row["symbol"]))
+
+    metadata = {
+        **index_metadata,
+        **holdings_metadata,
+        "profiles_count": len(merged),
+        "holdings_match_constituents": True,
+    }
+    return metadata, merged
 
 
 def read_csv_rows(path: Path) -> list[dict[str, str]]:
@@ -299,9 +571,23 @@ def write_csv(path: Path, rows: list[dict[str, Any]], fieldnames: list[str]) -> 
 
 
 def write_constituent_snapshot(
-    constituent_metadata: dict[str, Any], constituents: list[dict[str, str]]
+    constituent_metadata: dict[str, Any], constituents: list[dict[str, Any]]
 ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-    constituent_fields = ["symbol", "name", "share_type"]
+    constituent_fields = [
+        "symbol",
+        "full_symbol",
+        "company_name_zh",
+        "name",
+        "share_type",
+        "weight_pct",
+        "fund_name",
+        "fund_name_zh",
+        "sector",
+        "sector_zh",
+        "industry_zh",
+        "business_summary",
+        "profile_updated_at",
+    ]
     constituent_path = OUTPUT_DIR / "03466_hshd30_constituents_hsi.csv"
     previous_constituents = read_csv_rows(constituent_path)
     comparison_basis = "previous_snapshot"
@@ -359,6 +645,12 @@ def write_constituent_snapshot(
         "source_name": "Hang Seng Indexes official website",
         "source_url": HSI_INDEX_PAGE_URL,
         "source_data_url": HSI_INDEX_CONSTITUENTS_URL,
+        "holdings_source_name": "Hang Seng Investment official 03466 portfolio composition",
+        "holdings_source_url": HSI_ETF_PAGE_URL,
+        "holdings_source_data_url": HSI_HOLDINGS_URL,
+        "business_source_name": "HKEX official equity quote company profile",
+        "business_source_url_template": f"{HKEX_QUOTE_PAGE_URL}?sc_lang=zh-CN&sym={{symbol}}",
+        "business_source_note": "Company profile text displayed by HKEX; profile provider: LSEG Data & Analytics",
     }
     atomic_write_text(
         OUTPUT_DIR / "constituents_summary.json",

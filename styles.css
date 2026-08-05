@@ -157,7 +157,7 @@ h1 {
 
 .constituent-metrics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1px;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -187,6 +187,7 @@ h1 {
 }
 
 .change-note,
+.table-caption,
 .source-note {
   margin: 0;
   color: var(--muted);
@@ -207,6 +208,10 @@ h1 {
   color: #765020;
 }
 
+.table-caption {
+  margin-bottom: 8px;
+}
+
 .constituent-table-wrap {
   max-height: 520px;
   overflow: auto;
@@ -217,6 +222,7 @@ h1 {
 
 .constituent-table {
   width: 100%;
+  min-width: 1080px;
   border-collapse: collapse;
   font-size: 14px;
 }
@@ -245,8 +251,58 @@ h1 {
 
 .constituent-table td:nth-child(2),
 .constituent-table th:nth-child(2) {
-  width: 130px;
+  width: 118px;
   font-variant-numeric: tabular-nums;
+}
+
+.constituent-table td:nth-child(3),
+.constituent-table th:nth-child(3) {
+  width: 110px;
+  text-align: right;
+}
+
+.constituent-table td:nth-child(4),
+.constituent-table th:nth-child(4) {
+  width: 210px;
+}
+
+.stock-code,
+.holding-weight {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.holding-weight {
+  color: var(--accent-strong);
+  font-weight: 800;
+}
+
+.company-name,
+.company-name-en,
+.business-summary small {
+  display: block;
+}
+
+.company-name {
+  margin-bottom: 3px;
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.company-name-en,
+.business-summary small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.business-summary {
+  min-width: 480px;
+  line-height: 1.55;
+}
+
+.business-summary small {
+  margin-top: 4px;
 }
 
 .constituent-table tr:last-child td {
@@ -580,7 +636,7 @@ code {
   }
 
   .constituent-metrics {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .constituent-table th,

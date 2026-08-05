@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>03466.HK 股息率与成分股监控</title>
-    <link rel="stylesheet" href="./styles.css?v=0.5.3">
-    <script src="./app.js?v=0.5.3" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=0.6.0">
+    <script src="./app.js?v=0.6.0" defer></script>
   </head>
   <body>
     <main class="shell">
@@ -16,8 +16,8 @@
           <p class="subhead">按每日收盘价计算；TTM 不足 12 个月时，用最近单月股息补足到 12 个月。</p>
         </div>
         <div class="version">
-          <span>v0.5.3</span>
-          <span>2026-08-05 14:45 CST</span>
+          <span>v0.6.0</span>
+          <span>2026-08-05 15:10 CST</span>
         </div>
       </header>
 
@@ -81,8 +81,12 @@
             <strong id="constituentCount">- / 30</strong>
           </div>
           <div>
-            <span class="label">官网资料时间</span>
+            <span class="label">指数资料时间</span>
             <strong id="constituentUpdatedAt">-</strong>
+          </div>
+          <div>
+            <span class="label">03466 持仓日期</span>
+            <strong id="holdingsAsOf">-</strong>
           </div>
           <div>
             <span class="label">最近同步</span>
@@ -90,23 +94,28 @@
           </div>
         </div>
         <p class="change-note" id="constituentChanges" aria-live="polite">正在读取成分变更…</p>
+        <p class="table-caption">按 03466 官网持股比例从高到低排列；公司名称和主营业务来自港交所官网公司资料。</p>
         <div class="constituent-table-wrap">
           <table class="constituent-table">
             <thead>
               <tr>
                 <th scope="col">序号</th>
-                <th scope="col">股票代码</th>
-                <th scope="col">官网名称</th>
+                <th scope="col">完整代码</th>
+                <th scope="col">持股比例</th>
+                <th scope="col">公司</th>
+                <th scope="col">主营业务</th>
               </tr>
             </thead>
             <tbody id="constituentTableBody">
-              <tr><td colspan="3">正在加载官网成分股…</td></tr>
+              <tr><td colspan="5">正在加载官网成分股…</td></tr>
             </tbody>
           </table>
         </div>
         <p class="source-note">
-          每天 07:10 CST 直接查询官网一次；仅在官网返回 HSHD30 且 30 个代码唯一时更新快照。
-          <a href="https://www.hsi.com.hk/eng/indexes/all-indexes/hshd30" target="_blank" rel="noopener noreferrer">查看恒生指数官网</a>
+          每天 07:10 CST 直接查询官网一次；只有指数成分、03466 持仓和 30 份港交所公司资料完整且代码完全一致时才更新。
+          <a href="https://www.hsi.com.hk/eng/indexes/all-indexes/hshd30" target="_blank" rel="noopener noreferrer">恒生指数官网</a>、
+          <a href="https://www.hangsenginvestment.com/en-hk/individual-investor/our-products/etf-listed-details/?FundClass=NA&amp;FundUnit=NA&amp;TrustNo=H0E329" target="_blank" rel="noopener noreferrer">恒生投资 03466 官网</a>。
+          公司资料由港交所官网展示，其资料提供方标示为 LSEG Data &amp; Analytics。
         </p>
       </section>
 

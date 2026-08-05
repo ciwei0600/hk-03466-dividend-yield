@@ -40,11 +40,11 @@ class ConstituentParsingTests(unittest.TestCase):
             ],
         }
 
-    def test_fetch_constituents_normalizes_and_validates_official_payload(self):
+    def test_fetch_index_constituents_normalizes_and_validates_official_payload(self):
         original = update_data.fetch_json
         update_data.fetch_json = lambda *args, **kwargs: self.payload
         try:
-            metadata, rows = update_data.fetch_constituents()
+            metadata, rows = update_data.fetch_index_constituents()
         finally:
             update_data.fetch_json = original
 
@@ -53,13 +53,13 @@ class ConstituentParsingTests(unittest.TestCase):
         self.assertEqual(len(rows), 30)
         self.assertEqual(rows[0]["symbol"], "00001")
 
-    def test_fetch_constituents_rejects_duplicate_symbols(self):
+    def test_fetch_index_constituents_rejects_duplicate_symbols(self):
         self.payload["indexSeriesList"][0]["indexList"][0]["constituentContent"][1]["code"] = "1"
         original = update_data.fetch_json
         update_data.fetch_json = lambda *args, **kwargs: self.payload
         try:
             with self.assertRaisesRegex(RuntimeError, "validation failed"):
-                update_data.fetch_constituents()
+                update_data.fetch_index_constituents()
         finally:
             update_data.fetch_json = original
 
@@ -135,6 +135,157 @@ class ConstituentParsingTests(unittest.TestCase):
             finally:
                 update_data.OUTPUT_DIR = original_output_dir
                 update_data.ASSETS_DIR = original_assets_dir
+
+
+class OfficialEnrichmentTests(unittest.TestCase):
+    def holdings_xml(self, duplicate=False):
+        rows = []
+        for index in range(1, 31):
+            code = 1 if duplicate and index == 2 else index
+            rows.append(
+                "<ETF>"
+                f"<StockName>Company {index}</StockName>"
+                f"<StockName_ts>公司 {index}</StockName_ts>"
+                f"<StockCode>{code} HK</StockCode>"
+                "<Sector>Industrials</Sector>"
+                "<Sector_ts>工业</Sector_ts>"
+                "<Exchange>Hong Kong</Exchange>"
+                "<Weight>3.30%</Weight>"
+                "</ETF>"
+            )
+        xml = (
+            "<ETFS>"
+            "<As_of_date>03 Aug 2026</As_of_date>"
+            "<Base_Currency>HKD</Base_Currency>"
+            "<Number_of_Stocks>30</Number_of_Stocks>"
+            "<Stock_Asset>99.00%</Stock_Asset>"
+            "<Cash_Equivalent_Asset>1.00%</Cash_Equivalent_Asset>"
+            "<Stock_Code>3466_Unlisted</Stock_Code>"
+            + "".join(rows)
+            + "</ETFS>"
+        )
+        return xml.encode("utf-16")
+
+    def test_parse_holdings_xml_validates_full_codes_and_weights(self):
+        metadata, rows = update_data.parse_holdings_xml(self.holdings_xml())
+        self.assertEqual(metadata["holdings_as_of"], "2026-08-03")
+        self.assertEqual(metadata["holding_weight_total_pct"], 99.0)
+        self.assertEqual(rows[0]["symbol"], "00001")
+        self.assertEqual(rows[0]["full_symbol"], "00001.HK")
+        self.assertEqual(rows[0]["weight_pct"], 3.3)
+
+    def test_parse_holdings_xml_rejects_duplicate_symbols(self):
+        with self.assertRaisesRegex(RuntimeError, "validation failed"):
+            update_data.parse_holdings_xml(self.holdings_xml(duplicate=True))
+
+    def test_parse_hkex_profile_uses_short_official_business_introduction(self):
+        payload = {
+            "data": {
+                "responsecode": "000",
+                "quote": {
+                    "product_type": "EQTY",
+                    "sym": "371",
+                    "nm_s": "北控水务集团",
+                    "summary": "北控水务集团有限公司是一家主要从事水务业务的公司。该公司通过四个部门运营业务。",
+                    "hsic_sub_sector_classification": "水务",
+                    "db_updatetime": "2026年8月5日09:36",
+                },
+            },
+            "qid": "00371",
+        }
+        profile = update_data.parse_hkex_profile(
+            f"hkexProfileCallback({json.dumps(payload, ensure_ascii=False)})", "00371"
+        )
+        self.assertEqual(profile["company_name_zh"], "北控水务集团")
+        self.assertEqual(
+            profile["business_summary"],
+            "北控水务集团有限公司是一家主要从事水务业务的公司。",
+        )
+        self.assertEqual(profile["industry_zh"], "水务")
+
+    def test_fetch_constituents_requires_and_merges_three_official_sources(self):
+        index_metadata = {"constituent_count": 30, "official_updated_at": "2026-08-05"}
+        index_rows = [
+            {"symbol": str(index).zfill(5), "name": f"Index {index}", "share_type": "O"}
+            for index in range(1, 31)
+        ]
+        holdings_metadata = {"holdings_count": 30, "holdings_as_of": "2026-08-03"}
+        holdings = [
+            {
+                "symbol": str(index).zfill(5),
+                "full_symbol": f"{index:05d}.HK",
+                "fund_name": f"Fund {index}",
+                "fund_name_zh": f"基金 {index}",
+                "sector": "Industrials",
+                "sector_zh": "工业",
+                "weight_pct": float(index),
+            }
+            for index in range(1, 31)
+        ]
+        originals = (
+            update_data.fetch_index_constituents,
+            update_data.fetch_fund_holdings,
+            update_data.fetch_hkex_access_token,
+            update_data.fetch_hkex_profile,
+        )
+        update_data.fetch_index_constituents = lambda: (index_metadata, index_rows)
+        update_data.fetch_fund_holdings = lambda: (holdings_metadata, holdings)
+        update_data.fetch_hkex_access_token = lambda: "public-token"
+        update_data.fetch_hkex_profile = lambda symbol, token: {
+            "company_name_zh": f"公司 {symbol}",
+            "business_summary": f"主营业务 {symbol}",
+            "industry_zh": "工业",
+            "profile_updated_at": "2026-08-05",
+        }
+        try:
+            metadata, rows = update_data.fetch_constituents()
+        finally:
+            (
+                update_data.fetch_index_constituents,
+                update_data.fetch_fund_holdings,
+                update_data.fetch_hkex_access_token,
+                update_data.fetch_hkex_profile,
+            ) = originals
+
+        self.assertTrue(metadata["holdings_match_constituents"])
+        self.assertEqual(metadata["profiles_count"], 30)
+        self.assertEqual(rows[0]["full_symbol"], "00030.HK")
+        self.assertEqual(rows[-1]["business_summary"], "主营业务 00001")
+
+    def test_fetch_constituents_rejects_membership_and_portfolio_mismatch(self):
+        index_rows = [
+            {"symbol": str(index).zfill(5), "name": f"Index {index}", "share_type": "O"}
+            for index in range(1, 31)
+        ]
+        holdings = [
+            {"symbol": str(index).zfill(5), "weight_pct": 3.3}
+            for index in range(2, 32)
+        ]
+        originals = update_data.fetch_index_constituents, update_data.fetch_fund_holdings
+        update_data.fetch_index_constituents = lambda: ({"constituent_count": 30}, index_rows)
+        update_data.fetch_fund_holdings = lambda: ({"holdings_count": 30}, holdings)
+        try:
+            with self.assertRaisesRegex(RuntimeError, "symbols do not match"):
+                update_data.fetch_constituents()
+        finally:
+            update_data.fetch_index_constituents, update_data.fetch_fund_holdings = originals
+
+    def test_fetch_hkex_access_token_ignores_commented_sample(self):
+        page = """
+        <script>
+        LabCI.getToken = function () {
+            //return "Base64-AES-Encrypted-Token";
+            return "official-public-widget-token";
+        };
+        </script>
+        """
+        original = update_data.fetch_text
+        update_data.fetch_text = lambda *args, **kwargs: page
+        try:
+            token = update_data.fetch_hkex_access_token()
+        finally:
+            update_data.fetch_text = original
+        self.assertEqual(token, "official-public-widget-token")
 
 
 class PriceNormalizationTests(unittest.TestCase):

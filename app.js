@@ -22,6 +22,7 @@ const constituentTableBody = document.querySelector("#constituentTableBody");
 const constituentStatus = document.querySelector("#constituentStatus");
 const constituentCount = document.querySelector("#constituentCount");
 const constituentUpdatedAt = document.querySelector("#constituentUpdatedAt");
+const holdingsAsOf = document.querySelector("#holdingsAsOf");
 const constituentSyncedAt = document.querySelector("#constituentSyncedAt");
 const constituentChanges = document.querySelector("#constituentChanges");
 
@@ -29,12 +30,42 @@ let rows = [];
 let selectedIndex = -1;
 
 function parseCsv(text) {
-  const lines = text.trim().split(/\r?\n/);
-  const headers = lines.shift().split(",");
-  return lines.map((line) => {
-    const values = line.split(",");
-    return Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""]));
-  });
+  const records = [];
+  let record = [];
+  let field = "";
+  let quoted = false;
+  const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  for (let index = 0; index < normalized.length; index += 1) {
+    const char = normalized[index];
+    if (quoted) {
+      if (char === '"' && normalized[index + 1] === '"') {
+        field += '"';
+        index += 1;
+      } else if (char === '"') {
+        quoted = false;
+      } else {
+        field += char;
+      }
+    } else if (char === '"') {
+      quoted = true;
+    } else if (char === ",") {
+      record.push(field);
+      field = "";
+    } else if (char === "\n") {
+      record.push(field);
+      if (record.some((value) => value !== "")) records.push(record);
+      record = [];
+      field = "";
+    } else {
+      field += char;
+    }
+  }
+  record.push(field);
+  if (record.some((value) => value !== "")) records.push(record);
+  const headers = records.shift() || [];
+  return records.map((values) => Object.fromEntries(
+    headers.map((header, index) => [header, values[index] ?? ""]),
+  ));
 }
 
 function toNumber(value) {
@@ -129,8 +160,17 @@ function formatSyncedTime(value) {
   return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute} HKT`;
 }
 
+function formatSnapshotDate(value) {
+  if (!value) return "-";
+  const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match ? `${match[1]}-${match[2]}-${match[3]}` : String(value);
+}
+
 function formatConstituentList(items) {
-  return items.map((item) => `${item.symbol} ${item.name}`).join("、");
+  return items.map((item) => {
+    const fullSymbol = item.full_symbol || `${item.symbol}.HK`;
+    return `${fullSymbol} ${item.company_name_zh || item.name}`;
+  }).join("、");
 }
 
 function formatConstituentChange(event) {
@@ -173,12 +213,16 @@ async function initConstituents() {
   const expectedCount = Number(snapshot.summary.expected_count || 30);
   const isSynced = snapshot.summary.sync_status === "synced"
     && snapshot.rows.length === expectedCount
-    && snapshot.summary.count_matches_official === true;
+    && snapshot.summary.count_matches_official === true
+    && snapshot.summary.holdings_match_constituents === true
+    && Number(snapshot.summary.holdings_count) === expectedCount
+    && Number(snapshot.summary.profiles_count) === expectedCount;
 
   constituentStatus.textContent = isSynced ? "官网已同步" : "同步待核对";
   constituentStatus.classList.toggle("is-warning", !isSynced);
   constituentCount.textContent = `${snapshot.rows.length} / ${expectedCount}`;
   constituentUpdatedAt.textContent = formatOfficialTime(snapshot.summary.official_updated_at);
+  holdingsAsOf.textContent = formatSnapshotDate(snapshot.summary.holdings_as_of);
   constituentSyncedAt.textContent = formatSyncedTime(snapshot.summary.synced_at);
   constituentCsvLink.href = snapshot.source.constituents;
   renderConstituentChanges(snapshot.summary);
@@ -186,11 +230,44 @@ async function initConstituents() {
   constituentTableBody.textContent = "";
   snapshot.rows.forEach((row, index) => {
     const tr = document.createElement("tr");
-    [String(index + 1), row.symbol, row.name].forEach((value) => {
-      const td = document.createElement("td");
-      td.textContent = value;
-      tr.appendChild(td);
-    });
+
+    const orderCell = document.createElement("td");
+    orderCell.textContent = String(index + 1);
+    tr.appendChild(orderCell);
+
+    const symbolCell = document.createElement("td");
+    symbolCell.className = "stock-code";
+    symbolCell.textContent = row.full_symbol || `${row.symbol}.HK`;
+    tr.appendChild(symbolCell);
+
+    const weightCell = document.createElement("td");
+    weightCell.className = "holding-weight";
+    const weight = toNumber(row.weight_pct);
+    weightCell.textContent = weight === null ? "-" : formatPercent(weight);
+    tr.appendChild(weightCell);
+
+    const companyCell = document.createElement("td");
+    const companyName = document.createElement("strong");
+    companyName.className = "company-name";
+    companyName.textContent = row.company_name_zh || row.fund_name_zh || row.name;
+    const companyNameEn = document.createElement("span");
+    companyNameEn.className = "company-name-en";
+    companyNameEn.textContent = row.name || row.fund_name;
+    companyCell.append(companyName, companyNameEn);
+    tr.appendChild(companyCell);
+
+    const businessCell = document.createElement("td");
+    businessCell.className = "business-summary";
+    const businessText = document.createElement("span");
+    businessText.textContent = row.business_summary || "-";
+    businessCell.appendChild(businessText);
+    if (row.industry_zh) {
+      const industry = document.createElement("small");
+      industry.textContent = `行业：${row.industry_zh}`;
+      businessCell.appendChild(industry);
+    }
+    tr.appendChild(businessCell);
+
     constituentTableBody.appendChild(tr);
   });
 }

@@ -4,14 +4,16 @@ Static dashboard for 03466.HK daily annualized TTM dividend yield and official H
 
 ## Version
 
-- Version: `0.5.3`
-- Updated: `2026-08-05 14:45 CST`
+- Version: `0.6.0`
+- Updated: `2026-08-05 15:10 CST`
 
 ## Data
 
 - Close prices: Data_Server `/v1/hk-equity-quotes`, normalized to one verified close per trade date
 - Distributions: Hang Seng Investment official `etffunddetail` API, strictly the listed HKD counter `Fund_code=3466`
 - HSHD30 constituents: Hang Seng Indexes official public `constituents.do` endpoint
+- 03466 constituent weights: Hang Seng Investment official `H0E329.xml` portfolio composition
+- Company names, industries and short business introductions: HKEX official equity quote company profiles (profile provider shown by HKEX: LSEG Data & Analytics)
 
 ## Calculation
 
@@ -36,7 +38,7 @@ On Quant, deployment installs two independent jobs:
 10 7 * * * python3 scripts/update-data.py --constituents-only
 ```
 
-The weekday job refreshes close prices from Data_Server and listed-class distributions directly from Hang Seng Investment after market close. Distribution rows are rejected if they predate the `2025-04-07` listing date, use a non-HKD currency, or repeat an ex-dividend date. Price rows are reduced to one row per trade date; conflicting same-day closes fail the update instead of silently changing the chart. The daily constituent job directly checks the Hang Seng Indexes official endpoint once at `07:10 CST`. The page shows the latest sync time, highlights additions/removals on the detecting run, and keeps the most recent recorded change visible on later no-change runs.
+The weekday job refreshes close prices from Data_Server and listed-class distributions directly from Hang Seng Investment after market close. Distribution rows are rejected if they predate the `2025-04-07` listing date, use a non-HKD currency, or repeat an ex-dividend date. Price rows are reduced to one row per trade date; conflicting same-day closes fail the update instead of silently changing the chart. The daily constituent job directly checks three official web sources once at `07:10 CST`: Hang Seng Indexes membership, Hang Seng Investment's complete 03466 portfolio composition, and HKEX company profiles. It writes a new snapshot only when all three contain 30 unique, exactly matching stock codes and every holding has a positive weight and non-empty business introduction. The page shows five-digit `.HK` codes, portfolio weights, short business introductions, the latest sync time, and constituent additions/removals; the most recent recorded change remains visible after later no-change runs.
 
 ## Local Preview
 
