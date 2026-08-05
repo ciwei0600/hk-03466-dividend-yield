@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>03466.HK 股息率</title>
+    <title>03466.HK 股息率与成分股监控</title>
     <link rel="stylesheet" href="./styles.css">
     <script src="./app.js" defer></script>
   </head>
@@ -16,8 +16,8 @@
           <p class="subhead">按每日收盘价计算；TTM 不足 12 个月时，用最近单月股息补足到 12 个月。</p>
         </div>
         <div class="version">
-          <span>v0.4.5</span>
-          <span>2026-06-30 16:51 CST</span>
+          <span>v0.5.0</span>
+          <span>2026-08-05 11:25 CST</span>
         </div>
       </header>
 
@@ -67,6 +67,45 @@
         </noscript>
       </section>
 
+      <section class="constituents-panel" aria-labelledby="constituentsTitle">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">HSHD30</p>
+            <h2 id="constituentsTitle">成分股监控</h2>
+          </div>
+          <span class="sync-status" id="constituentStatus">正在核对官网</span>
+        </div>
+        <div class="constituent-metrics" aria-label="成分股同步状态">
+          <div>
+            <span class="label">官网成分股</span>
+            <strong id="constituentCount">- / 30</strong>
+          </div>
+          <div>
+            <span class="label">官网资料时间</span>
+            <strong id="constituentUpdatedAt">-</strong>
+          </div>
+        </div>
+        <p class="change-note" id="constituentChanges" aria-live="polite">正在读取成分变更…</p>
+        <div class="constituent-table-wrap">
+          <table class="constituent-table">
+            <thead>
+              <tr>
+                <th scope="col">序号</th>
+                <th scope="col">股票代码</th>
+                <th scope="col">官网名称</th>
+              </tr>
+            </thead>
+            <tbody id="constituentTableBody">
+              <tr><td colspan="3">正在加载官网成分股…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="source-note">
+          每天 07:10 CST 直接查询官网一次；仅在官网返回 HSHD30 且 30 个代码唯一时更新快照。
+          <a href="https://www.hsi.com.hk/eng/indexes/all-indexes/hshd30" target="_blank" rel="noopener noreferrer">查看恒生指数官网</a>
+        </p>
+      </section>
+
       <section class="details">
         <div class="details-wide">
           <h2>计算口径</h2>
@@ -77,6 +116,7 @@
       <nav class="downloads" aria-label="下载">
         <a id="dailyCsvLink" href="./assets/03466_ttm_dividend_yield_daily_annualized.csv">下载逐日计算 CSV</a>
         <a id="dividendCsvLink" href="./assets/03466_dividends_source_hsi.csv">下载派息源数据 CSV</a>
+        <a id="constituentCsvLink" href="./assets/03466_hshd30_constituents_hsi.csv">下载成分股 CSV</a>
       </nav>
     </main>
   </body>

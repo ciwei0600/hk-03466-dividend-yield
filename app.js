@@ -2,10 +2,14 @@ const DATA_SOURCES = [
   {
     daily: "./runtime-data/03466_ttm_dividend_yield_daily_annualized.csv",
     dividends: "./runtime-data/03466_dividends_source_hsi.csv",
+    constituents: "./runtime-data/03466_hshd30_constituents_hsi.csv",
+    constituentsSummary: "./runtime-data/constituents_summary.json",
   },
   {
     daily: "./assets/03466_ttm_dividend_yield_daily_annualized.csv",
     dividends: "./assets/03466_dividends_source_hsi.csv",
+    constituents: "./assets/03466_hshd30_constituents_hsi.csv",
+    constituentsSummary: "./assets/constituents_summary.json",
   },
 ];
 
@@ -13,6 +17,12 @@ const chart = document.querySelector("#yieldChart");
 const readout = document.querySelector("#pointReadout");
 const dailyCsvLink = document.querySelector("#dailyCsvLink");
 const dividendCsvLink = document.querySelector("#dividendCsvLink");
+const constituentCsvLink = document.querySelector("#constituentCsvLink");
+const constituentTableBody = document.querySelector("#constituentTableBody");
+const constituentStatus = document.querySelector("#constituentStatus");
+const constituentCount = document.querySelector("#constituentCount");
+const constituentUpdatedAt = document.querySelector("#constituentUpdatedAt");
+const constituentChanges = document.querySelector("#constituentChanges");
 
 let rows = [];
 let selectedIndex = -1;
@@ -73,6 +83,79 @@ async function fetchFirstAvailableCsv() {
     }
   }
   throw new Error("No dividend yield CSV source is available");
+}
+
+async function fetchConstituentSnapshot() {
+  for (const source of DATA_SOURCES) {
+    try {
+      const [csvResponse, summaryResponse] = await Promise.all([
+        fetch(source.constituents, { cache: "no-store" }),
+        fetch(source.constituentsSummary, { cache: "no-store" }),
+      ]);
+      if (!csvResponse.ok || !summaryResponse.ok) continue;
+      return {
+        rows: parseCsv(await csvResponse.text()),
+        summary: await summaryResponse.json(),
+        source,
+      };
+    } catch (error) {
+      console.warn(`failed to load ${source.constituents}`, error);
+    }
+  }
+  throw new Error("No constituent snapshot is available");
+}
+
+function formatOfficialTime(value) {
+  if (!value) return "-";
+  return `${String(value).slice(0, 16)} HKT`;
+}
+
+function formatConstituentList(items) {
+  return items.map((item) => `${item.symbol} ${item.name}`).join("、");
+}
+
+function renderConstituentChanges(summary) {
+  const added = summary.added_since_previous || [];
+  const removed = summary.removed_since_previous || [];
+  if (added.length || removed.length) {
+    const parts = [];
+    if (added.length) parts.push(`新增：${formatConstituentList(added)}`);
+    if (removed.length) parts.push(`剔除：${formatConstituentList(removed)}`);
+    constituentChanges.textContent = parts.join("；");
+    constituentChanges.classList.add("has-change");
+    return;
+  }
+  if (summary.comparison_basis === "none") {
+    constituentChanges.textContent = "已建立首个官网基准快照，后续同步将自动记录新增与剔除。";
+    return;
+  }
+  constituentChanges.textContent = "与上一次成功快照相比，未发现成分股变更。";
+}
+
+async function initConstituents() {
+  const snapshot = await fetchConstituentSnapshot();
+  const expectedCount = Number(snapshot.summary.expected_count || 30);
+  const isSynced = snapshot.summary.sync_status === "synced"
+    && snapshot.rows.length === expectedCount
+    && snapshot.summary.count_matches_official === true;
+
+  constituentStatus.textContent = isSynced ? "官网已同步" : "同步待核对";
+  constituentStatus.classList.toggle("is-warning", !isSynced);
+  constituentCount.textContent = `${snapshot.rows.length} / ${expectedCount}`;
+  constituentUpdatedAt.textContent = formatOfficialTime(snapshot.summary.official_updated_at);
+  constituentCsvLink.href = snapshot.source.constituents;
+  renderConstituentChanges(snapshot.summary);
+
+  constituentTableBody.textContent = "";
+  snapshot.rows.forEach((row, index) => {
+    const tr = document.createElement("tr");
+    [String(index + 1), row.symbol, row.name].forEach((value) => {
+      const td = document.createElement("td");
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    constituentTableBody.appendChild(tr);
+  });
 }
 
 function getNearestIndex(x, points) {
@@ -316,6 +399,15 @@ async function init() {
   updateReadout(rows[selectedIndex]);
   renderChart();
   window.addEventListener("resize", renderChart);
+  try {
+    await initConstituents();
+  } catch (error) {
+    console.error(error);
+    if (constituentStatus) {
+      constituentStatus.textContent = "成分股加载失败";
+      constituentStatus.classList.add("is-warning");
+    }
+  }
 }
 
 init().catch((error) => {

@@ -1,0 +1,18 @@
+{
+  "index_symbol": "HSHD30",
+  "index_name": "Hang Seng High Dividend 30 Index",
+  "official_updated_at": "2026-08-05 07:32:54",
+  "official_request_at": "2026-08-05 11:25:52",
+  "constituent_count": 30,
+  "sync_status": "synced",
+  "expected_count": 30,
+  "count_matches_official": true,
+  "synced_at": "2026-08-05T03:26:02.203109+00:00",
+  "comparison_basis": "previous_snapshot",
+  "added_since_previous": [],
+  "removed_since_previous": [],
+  "latest_change": null,
+  "source_name": "Hang Seng Indexes official website",
+  "source_url": "https://www.hsi.com.hk/eng/indexes/all-indexes/hshd30",
+  "source_data_url": "https://www.hsi.com.hk/data/eng/rt/index-series/hshd30/constituents.do"
+}

@@ -5,13 +5,21 @@
 - Source: Data_Server `/v1/hk-equity-quotes`
 - Symbol: `03466`
 - Currency: HKD
-- Latest verified row in this release: `2026-06-30`, close `18.26`
+- Release snapshots are refreshed from the live API when a version is built.
 
-## Dividend Data
+## Distribution Data
 
-- Temporary source: Hang Seng Investment official `etffunddetail` API
-- Class: listed HKD counter, fund code `3466`
-- Formal Data_Server request: `fcd695df-c1e0-4aa4-8ac5-617538509c8b`
+- Source: Data_Server `/v1/hk-etp-distributions`
+- Symbol: `03466`
+- Upstream source: Hang Seng Investment official structured API
+- Completed Data_Server request: `fcd695df-c1e0-4aa4-8ac5-617538509c8b`
+
+## Constituent Data
+
+- Index: Hang Seng High Dividend 30 Index (`HSHD30`)
+- Source: Hang Seng Indexes official public `constituents.do` endpoint, fetched directly once daily at `07:10 CST`
+- Validation: `seriesCode=hshd30`, declared count `30`, exactly 30 unique constituent symbols
+- Data_Server request `471ba741-c8c2-4165-b78a-0d5b35273725` was rejected after the user explicitly chose direct official sourcing; it is not a project dependency.
 
 ## Calculation
 

@@ -1,17 +1,17 @@
 # 03466.HK Dividend Yield Dashboard
 
-Static dashboard for 03466.HK daily annualized TTM dividend yield.
+Static dashboard for 03466.HK daily annualized TTM dividend yield and official HSHD30 constituent monitoring.
 
 ## Version
 
-- Version: `0.4.5`
-- Updated: `2026-06-30 16:51 CST`
+- Version: `0.5.0`
+- Updated: `2026-08-05 11:25 CST`
 
 ## Data
 
 - Close prices: Data_Server `/v1/hk-equity-quotes`
-- Dividend snapshot: Hang Seng Investment official `etffunddetail` API, listed HKD counter 3466
-- Data_Server work order for formal HK ETP distributions: `fcd695df-c1e0-4aa4-8ac5-617538509c8b`
+- Distributions: Data_Server `/v1/hk-etp-distributions`, sourced from Hang Seng Investment
+- HSHD30 constituents: Hang Seng Indexes official public `constituents.do` endpoint
 
 ## Calculation
 
@@ -26,15 +26,16 @@ Before the first ex-dividend date, there is no current monthly dividend and no y
 
 ## Daily Update
 
-The page tries `runtime-data/03466_ttm_dividend_yield_daily_annualized.csv` first and falls back to the release snapshot under `assets/`.
+The page tries the daily yield and constituent snapshots under `runtime-data/` first and falls back to release snapshots under `assets/`.
 
-On Quant, deployment installs a weekday `18:05 CST` cron job:
+On Quant, deployment installs two independent jobs:
 
 ```bash
-python3 scripts/update-data.py
+5 18 * * 1-5 python3 scripts/update-data.py
+10 7 * * * python3 scripts/update-data.py --constituents-only
 ```
 
-The script refreshes `runtime-data/` from Data_Server close prices and Hang Seng Investment dividend data.
+The weekday job refreshes prices and distributions from Data_Server after market close. The daily constituent job directly checks the Hang Seng Indexes official endpoint once at `07:10 CST`; it validates the HSHD30 series, exactly 30 unique symbols, and records additions/removals against the previous successful snapshot.
 
 ## Local Preview
 
