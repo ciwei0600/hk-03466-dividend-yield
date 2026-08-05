@@ -27,9 +27,11 @@
 
 - Data_Server API base: `http://100.77.62.83:8010`。
 - 行情数据来自 Data_Server `/v1/hk-equity-quotes`。
-- 港股 ETP 派息数据使用 Data_Server `/v1/hk-etp-distributions`；工单 `fcd695df-c1e0-4aa4-8ac5-617538509c8b` 已完成并通过接口/入库证据验证。
+- 03466 派息数据按用户明确要求只使用恒生投资官网 `etffunddetail` 结构化接口中的上市 HKD 类别：`Fund_code=3466`、`Class_curr_symbol=HKD`、上市日 `2025-04-07`；不得读取 Data_Server `/v1/hk-etp-distributions` 参与计算。
+- 行情必须按交易日去重；同日多源收盘价一致时只保留一条，数值冲突时停止更新，不得静默选值。
 - HSHD30 成分股按用户明确要求直接使用恒生指数官网 `hshd30/constituents.do` 公开接口，每天 `07:10 CST` 查询一次；严格校验 series code、30 条数量和代码唯一性，异常时不得覆盖上一次成功快照。
 - 成分股 Data_Server 工单 `471ba741-c8c2-4165-b78a-0d5b35273725` 已按该决定拒绝，不作为项目依赖。
+- 03466 派息数据质量工单 `ed1868c5-0521-47fc-88e6-199a0e16000b` 已按用户的官网直取决定拒绝，不作为项目依赖。
 - `submitted/approved` 不是完成；只有 `done` 且通过真实接口或入库验证才算补齐。
 - 所有判断必须有事实依据，不能靠猜测。
 

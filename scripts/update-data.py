@@ -22,6 +22,16 @@ if not OUTPUT_DIR.is_absolute():
     OUTPUT_DIR = PROJECT_ROOT / OUTPUT_DIR
 DATA_SERVER_API_BASE = os.environ.get("DATA_SERVER_API_BASE", "http://100.77.62.83:8010").rstrip("/")
 DATA_SERVER_CONSUMER_ID = os.environ.get("DATA_SERVER_CONSUMER_ID", "cash-ranking")
+HSI_ETF_DETAIL_URL = (
+    "https://rbwm-api.hsbc.com.hk/"
+    "pws-hk-hase-hsvm2-papi-prod-proxy/v1/hsvm/aem/etffunddetail"
+)
+HSI_ETF_PAGE_URL = (
+    "https://www.hangsenginvestment.com/en-hk/individual-investor/"
+    "our-products/etf-listed-details/?FundClass=NA&FundUnit=NA&TrustNo=H0E329"
+)
+ETF_LISTED_HKD_FUND_CODE = "3466"
+ETF_LISTING_DATE = date(2025, 4, 7)
 HSI_INDEX_CODE = "hshd30"
 HSI_INDEX_CONSTITUENTS_URL = (
     f"https://www.hsi.com.hk/data/eng/rt/index-series/{HSI_INDEX_CODE}/constituents.do"
@@ -36,7 +46,7 @@ def fetch_json(url: str, *, params: dict[str, str] | None = None, headers: dict[
         url,
         headers={
             "Accept": "application/json",
-            "User-Agent": "hk-03466-dividend-yield/0.5.0",
+            "User-Agent": "hk-03466-dividend-yield/0.5.1",
             **(headers or {}),
         },
     )
@@ -53,6 +63,35 @@ def parse_date(value: str) -> date:
     return datetime.fromisoformat(value[:10]).date()
 
 
+def deduplicate_prices(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        trade_date = str(row.get("trade_date") or "")[:10]
+        if not trade_date or row.get("close") is None:
+            raise RuntimeError("Data_Server returned a price row without trade_date or close")
+        grouped.setdefault(trade_date, []).append(row)
+
+    deduplicated = []
+    for trade_date, candidates in grouped.items():
+        close_values = {round(float(row["close"]), 8) for row in candidates}
+        if len(close_values) != 1:
+            sources = ", ".join(
+                f"{row.get('source_id', 'unknown')}={row.get('close')}" for row in candidates
+            )
+            raise RuntimeError(f"Conflicting 03466 closes for {trade_date}: {sources}")
+
+        preferred = [row for row in candidates if row.get("source_id") == "tencent_finance"]
+        pool = preferred or candidates
+        selected = max(
+            pool,
+            key=lambda row: (str(row.get("source_updated_at") or ""), str(row.get("ingested_at") or "")),
+        )
+        deduplicated.append(selected)
+
+    deduplicated.sort(key=lambda row: row["trade_date"])
+    return deduplicated
+
+
 def fetch_prices() -> list[dict[str, Any]]:
     payload = fetch_json(
         f"{DATA_SERVER_API_BASE}/v1/hk-equity-quotes",
@@ -67,38 +106,70 @@ def fetch_prices() -> list[dict[str, Any]]:
     rows = payload.get("items") or []
     if not rows:
         raise RuntimeError("Data_Server returned no 03466 price rows")
-    rows = sorted(rows, key=lambda row: row["trade_date"])
-    return rows
+    return deduplicate_prices(rows)
 
 
 def fetch_dividends() -> list[dict[str, Any]]:
     payload = fetch_json(
-        f"{DATA_SERVER_API_BASE}/v1/hk-etp-distributions",
-        params={
-            "symbol": "03466",
-            "from": "2023-01-01",
-            "to": date.today().isoformat(),
-            "limit": "1000",
-        },
-        headers={"X-Consumer-Id": DATA_SERVER_CONSUMER_ID},
+        HSI_ETF_DETAIL_URL,
+        params={"trustNo": "H0E329"},
+        headers={"Referer": HSI_ETF_PAGE_URL},
     )
-    dividends = payload.get("items") or []
+    classes = payload.get("Fund", {}).get("FundUnitClass") or []
+    if not isinstance(classes, list):
+        classes = [classes]
+
+    listed_hkd = next(
+        (
+            item
+            for item in classes
+            if str(item.get("Fund_code")) == ETF_LISTED_HKD_FUND_CODE
+            and item.get("Class_curr_symbol") == "HKD"
+        ),
+        None,
+    )
+    if listed_hkd is None:
+        raise RuntimeError("Hang Seng Investment payload has no listed HKD counter 3466 class")
+
+    listing_date = parse_date(listed_hkd.get("Listing_date") or ETF_LISTING_DATE.isoformat())
+    if listing_date != ETF_LISTING_DATE:
+        raise RuntimeError(
+            f"Unexpected 03466 listing date from Hang Seng Investment: {listing_date.isoformat()}"
+        )
+
+    dividends = listed_hkd.get("Dividends", {}).get("Dividend") or []
+    if not isinstance(dividends, list):
+        dividends = [dividends]
     if not dividends:
-        raise RuntimeError("Data_Server returned no 03466 distribution rows")
+        raise RuntimeError("Hang Seng Investment returned no 03466 listed-class distributions")
 
     parsed = []
     for row in dividends:
+        ex_date = parse_date(row["Ex_div_date"])
+        currency = row["Currency"]
+        amount = float(row["Div"])
+        if ex_date < listing_date:
+            raise RuntimeError(
+                f"Hang Seng Investment listed class contains pre-listing distribution {ex_date.isoformat()}"
+            )
+        if currency != "HKD" or amount <= 0:
+            raise RuntimeError(
+                f"Invalid 03466 listed-class distribution on {ex_date.isoformat()}: {currency} {amount}"
+            )
         parsed.append(
             {
-                "ex_date": parse_date(row["ex_date"]),
-                "record_date": parse_date(row["record_date"]),
-                "payment_date": parse_date(row["payment_date"]),
-                "currency": row["currency"],
-                "dividend_per_unit_hkd": float(row["distribution_per_unit"]),
-                "div_serial_no": (row.get("attributes") or {}).get("div_serial_no", ""),
+                "ex_date": ex_date,
+                "record_date": parse_date(row["Record_date"]),
+                "payment_date": parse_date(row["Payment_date"]),
+                "currency": currency,
+                "dividend_per_unit_hkd": amount,
+                "div_serial_no": row.get("Div_serial_no", ""),
             }
         )
     parsed.sort(key=lambda row: row["ex_date"])
+    ex_dates = [row["ex_date"] for row in parsed]
+    if len(ex_dates) != len(set(ex_dates)):
+        raise RuntimeError("Hang Seng Investment listed class contains duplicate ex-dividend dates")
     return parsed
 
 
@@ -182,13 +253,13 @@ def calculate(prices: list[dict[str, Any]], dividends: list[dict[str, Any]]) -> 
         close = float(price["close"])
         available = [row for row in dividends if row["ex_date"] <= trade_date][-12:]
         actual_count = len(available)
-        actual_sum = sum(row["dividend_per_unit_hkd"] for row in available)
+        actual_sum = round(sum(row["dividend_per_unit_hkd"] for row in available), 10)
         latest_monthly = available[-1]["dividend_per_unit_hkd"] if available else None
         if latest_monthly is None:
             annualized = None
             dividend_yield = None
         else:
-            annualized = actual_sum + latest_monthly * max(0, 12 - actual_count)
+            annualized = round(actual_sum + latest_monthly * max(0, 12 - actual_count), 10)
             dividend_yield = annualized / close
 
         output.append(
@@ -218,7 +289,7 @@ def atomic_write_text(path: Path, content: str) -> None:
 
 def write_csv(path: Path, rows: list[dict[str, Any]], fieldnames: list[str]) -> None:
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", newline="", dir=path.parent, delete=False) as tmp:
-        writer = csv.DictWriter(tmp, fieldnames=fieldnames)
+        writer = csv.DictWriter(tmp, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         for row in rows:
             writer.writerow({field: "" if row.get(field) is None else row.get(field) for field in fieldnames})
@@ -332,6 +403,10 @@ def update_yield_snapshot() -> None:
         "dividend_rows": len(dividends),
         "data_server_api_base": DATA_SERVER_API_BASE,
         "data_server_consumer_id": DATA_SERVER_CONSUMER_ID,
+        "price_source": "Data_Server /v1/hk-equity-quotes, unique trade dates",
+        "dividend_source": "Hang Seng Investment official listed HKD counter 3466",
+        "dividend_source_url": HSI_ETF_PAGE_URL,
+        "listing_date": ETF_LISTING_DATE.isoformat(),
     }
     atomic_write_text(OUTPUT_DIR / "summary.json", json.dumps(summary, ensure_ascii=False, indent=2) + "\n")
     print(

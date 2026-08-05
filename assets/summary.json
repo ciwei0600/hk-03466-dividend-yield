@@ -1,0 +1,23 @@
+{
+  "symbol": "03466",
+  "updated_at": "2026-08-05T06:26:46.126559+00:00",
+  "latest": {
+    "trade_date": "2026-08-03",
+    "close": 20.26,
+    "source_id": "tencent_finance",
+    "actual_dividend_count": 12,
+    "actual_dividend_sum_hkd": 1.49,
+    "latest_monthly_dividend_hkd": 0.11,
+    "annualized_dividend_hkd": 1.49,
+    "annualized_dividend_yield": 0.07354392892398814,
+    "annualized_dividend_yield_pct": 7.354392892398814
+  },
+  "price_rows": 325,
+  "dividend_rows": 16,
+  "data_server_api_base": "http://100.77.62.83:8010",
+  "data_server_consumer_id": "cash-ranking",
+  "price_source": "Data_Server /v1/hk-equity-quotes, unique trade dates",
+  "dividend_source": "Hang Seng Investment official listed HKD counter 3466",
+  "dividend_source_url": "https://www.hangsenginvestment.com/en-hk/individual-investor/our-products/etf-listed-details/?FundClass=NA&FundUnit=NA&TrustNo=H0E329",
+  "listing_date": "2025-04-07"
+}
