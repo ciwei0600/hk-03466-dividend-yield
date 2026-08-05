@@ -21,6 +21,7 @@
 
 - 页面代码放在根目录静态文件和 `assets/`。
 - `runtime-data/`、缓存、日志、导出文件必须 gitignore。
+- `index.html` 引用 JavaScript/CSS 时必须带当前发布版本参数；nginx 对 HTML、JavaScript、CSS 强制重新验证，对 `runtime-data/` 使用 `no-store`，避免浏览器继续使用旧展示逻辑或旧快照。
 - 写代码不允许硬编码绝对路径，必须用相对路径、环境变量、配置文件或运行时推导路径。
 
 ## Data_Server 边界

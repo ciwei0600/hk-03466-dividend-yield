@@ -4,8 +4,8 @@ Static dashboard for 03466.HK daily annualized TTM dividend yield and official H
 
 ## Version
 
-- Version: `0.5.2`
-- Updated: `2026-08-05 14:38 CST`
+- Version: `0.5.3`
+- Updated: `2026-08-05 14:45 CST`
 
 ## Data
 
@@ -27,6 +27,7 @@ Before the first ex-dividend date, there is no current monthly dividend and no y
 ## Daily Update
 
 The page tries the daily yield and constituent snapshots under `runtime-data/` first and falls back to release snapshots under `assets/`.
+HTML, JavaScript and CSS are served with revalidation, and the page pins JavaScript/CSS URLs to the release version so a deployment cannot leave returning browsers on stale UI logic. Runtime snapshots are served with `no-store`.
 
 On Quant, deployment installs two independent jobs:
 
