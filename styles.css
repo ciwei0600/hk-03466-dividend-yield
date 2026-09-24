@@ -48,10 +48,24 @@ body {
 
 h1 {
   margin: 0;
-  font-size: 52px;
+  font-size: 42px;
   line-height: 1.05;
   letter-spacing: 0;
 }
+
+[hidden] { display: none !important; }
+.fund-tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
+.fund-tabs button { border: 1px solid var(--line); background: white; padding: 13px 18px; border-radius: 8px; color: var(--ink); font: inherit; cursor: pointer; }
+.fund-tabs button[aria-pressed="true"] { background: var(--accent-strong); color: white; border-color: var(--accent-strong); }
+.fund-tabs button:focus-visible { outline: 3px solid var(--warn); outline-offset: 3px; }
+#fundTitle { margin: 0 0 10px; font-size: 24px; }
+#dataStatus { margin: 0 0 18px; line-height: 1.7; }
+.is-warning { color: #97601d; }
+.downloads a[aria-disabled="true"] { opacity: 0.45; pointer-events: none; }
+.cn-table { min-width: 880px; }
+.cn-table td:nth-child(4), .cn-table th:nth-child(4) { width: 110px; text-align: right; }
+.cn-table td:nth-child(5), .cn-table th:nth-child(5) { width: 250px; }
+.cn-table .business-summary { min-width: 160px; }
 
 .subhead {
   max-width: 720px;
@@ -570,6 +584,8 @@ code {
   h1 {
     font-size: 30px;
   }
+
+  h1 span { display: block; }
 
   .metrics {
     grid-template-columns: 1fr 1fr;

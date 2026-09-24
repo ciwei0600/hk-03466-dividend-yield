@@ -1,0 +1,21 @@
+{
+  "symbol": "515080",
+  "currency": "CNY",
+  "updated_at": "2026-09-24T08:00:58.510342+00:00",
+  "latest": {
+    "trade_date": "2026-09-23",
+    "close": 1.543,
+    "source_id": "tencent_finance_raw_temporary",
+    "source_url": "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get",
+    "actual_dividend_count": 4,
+    "ttm_dividend_cny": 0.07,
+    "ttm_dividend_yield_pct": 4.536616979909269
+  },
+  "price_rows": 1635,
+  "dividend_rows": 18,
+  "price_source": "Tencent raw daily quotes (temporary)",
+  "temporary_price_source": true,
+  "data_request_id": "522b0258-c618-4ba0-b6e2-4a411d0f5d35",
+  "dividend_source": "Data_Server /v1/cn-etf-distributions; CMF official announcements",
+  "calculation": "sum of actual cash distributions in (trade_date-365 days, trade_date] / raw close"
+}

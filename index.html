@@ -3,46 +3,53 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>03466.HK 股息率与成分股监控</title>
-    <link rel="stylesheet" href="./styles.css?v=0.6.1">
-    <script src="./app.js?v=0.6.1" defer></script>
+    <title>红利 ETF 股息率与成分股监控</title>
+    <link rel="stylesheet" href="./styles.css?v=0.7.0">
+    <script src="./app.js?v=0.7.0" defer></script>
   </head>
   <body>
     <main class="shell">
       <header class="topbar">
         <div>
-          <p class="eyebrow">HKEX 03466</p>
-          <h1>03466.HK 年化 TTM 股息率</h1>
-          <p class="subhead">按每日收盘价计算；TTM 不足 12 个月时，用最近单月股息补足到 12 个月。</p>
+          <p class="eyebrow">DIVIDEND ETF MONITOR</p>
+          <h1><span>红利 ETF</span> <span>股息率与成分股监控</span></h1>
+          <p class="subhead">恒生高息股 30 · 中证红利｜每日收盘价、现金分红与成分股。</p>
         </div>
         <div class="version">
-          <span>v0.6.1</span>
-          <span>2026-09-24 14:45 CST</span>
+          <span>v0.7.0</span>
+          <span>2026-09-24 16:08 CST</span>
         </div>
       </header>
+
+      <nav class="fund-tabs" aria-label="选择基金">
+        <button type="button" data-fund="03466" aria-pressed="true">03466.HK · 恒生高息股 30</button>
+        <button type="button" data-fund="515080" aria-pressed="false">515080.SH · 招商中证红利</button>
+      </nav>
+      <h2 id="fundTitle">03466.HK · 恒生高息股 30 ETF</h2>
+      <p id="dataStatus" class="source-note" role="status">正在加载数据…</p>
 
       <section class="metrics" aria-label="关键指标">
         <div class="metric">
           <span class="label">最新日期</span>
-          <strong data-latest-field="trade_date">2026-08-03</strong>
+          <strong data-latest-field="trade_date">—</strong>
         </div>
         <div class="metric">
           <span class="label">收盘价</span>
-          <strong data-latest-field="close">20.26 HKD</strong>
+          <strong data-latest-field="close">—</strong>
         </div>
         <div class="metric">
-          <span class="label">年化股息</span>
-          <strong data-latest-field="annualized_dividend_hkd">1.49 HKD</strong>
+          <span class="label" data-dividend-label>年化股息</span>
+          <strong data-latest-field="annualized_dividend">—</strong>
         </div>
         <div class="metric highlight">
-          <span class="label">年化股息率</span>
-          <strong data-latest-field="annualized_dividend_yield_pct">7.35%</strong>
+          <span class="label" data-yield-label>年化股息率</span>
+          <strong data-latest-field="dividend_yield_pct">—</strong>
         </div>
       </section>
 
       <section class="chart-panel" aria-label="折线图">
         <div class="chart-wrap">
-          <svg id="yieldChart" role="img" aria-label="03466.HK daily annualized TTM dividend yield and close price interactive line chart"></svg>
+          <svg id="yieldChart" role="img" aria-label="基金每日股息率与收盘价交互折线图"></svg>
         </div>
         <div class="point-readout" id="pointReadout" aria-live="polite">
           <div>
@@ -54,23 +61,23 @@
             <strong data-field="close">-</strong>
           </div>
           <div>
-            <span class="label">年化股息</span>
-            <strong data-field="annualized_dividend_hkd">-</strong>
+            <span class="label" data-dividend-label>年化股息</span>
+            <strong data-field="annualized_dividend">-</strong>
           </div>
           <div>
             <span class="label">股息率</span>
-            <strong data-field="annualized_dividend_yield_pct">-</strong>
+            <strong data-field="dividend_yield_pct">-</strong>
           </div>
         </div>
         <noscript>
-          <img src="./assets/03466_ttm_dividend_yield_daily_annualized.png" alt="03466.HK daily annualized TTM dividend yield line chart">
+          <p>请启用 JavaScript 以切换基金及查看最新图表；也可下载下方 CSV。</p>
         </noscript>
       </section>
 
       <section class="constituents-panel" aria-labelledby="constituentsTitle">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">HSHD30</p>
+            <p class="eyebrow" id="indexName">HSHD30</p>
             <h2 id="constituentsTitle">成分股监控</h2>
           </div>
           <span class="sync-status" id="constituentStatus">正在核对官网</span>
@@ -85,7 +92,7 @@
             <strong id="constituentUpdatedAt">-</strong>
           </div>
           <div>
-            <span class="label">03466 持仓日期</span>
+            <span class="label" id="holdingsDateLabel">基金持仓日期</span>
             <strong id="holdingsAsOf">-</strong>
           </div>
           <div>
@@ -94,24 +101,25 @@
           </div>
         </div>
         <p class="change-note" id="constituentChanges" aria-live="polite">正在读取成分变更…</p>
-        <p class="table-caption">按 03466 官网持股比例从高到低排列；公司名称和主营业务来自港交所官网公司资料。</p>
+        <p class="table-caption" id="tableCaption"></p>
         <div class="constituent-table-wrap">
           <table class="constituent-table">
             <thead>
               <tr>
                 <th scope="col">序号</th>
                 <th scope="col">完整代码</th>
-                <th scope="col">持股比例</th>
+                <th scope="col" id="holdingWeightLabel">基金持仓</th>
+                <th scope="col" data-index-weight hidden>指数权重</th>
                 <th scope="col">公司</th>
-                <th scope="col">主营业务</th>
+                <th scope="col" id="companyInfoLabel">主营业务</th>
               </tr>
             </thead>
             <tbody id="constituentTableBody">
-              <tr><td colspan="5">正在加载官网成分股…</td></tr>
+              <tr><td colspan="6">正在加载官网成分股…</td></tr>
             </tbody>
           </table>
         </div>
-        <p class="source-note">
+        <p class="source-note" id="constituentSourceNote">
           每天 07:10 CST 直接查询官网一次；只有指数成分、03466 持仓和 30 份港交所公司资料完整且代码完全一致时才更新。
           <a href="https://www.hsi.com.hk/eng/indexes/all-indexes/hshd30" target="_blank" rel="noopener noreferrer">恒生指数官网</a>、
           <a href="https://www.hangsenginvestment.com/en-hk/individual-investor/our-products/etf-listed-details/?FundClass=NA&amp;FundUnit=NA&amp;TrustNo=H0E329" target="_blank" rel="noopener noreferrer">恒生投资 03466 官网</a>。
@@ -122,7 +130,7 @@
       <section class="details">
         <div class="details-wide">
           <h2>计算口径</h2>
-          <p>对每个交易日，取截至该日已除息的最近最多 12 次月度分派；如果不足 12 次，则用最近一次月度分派补足剩余月份，再除以当日收盘价。</p>
+          <p id="calculationNote">正在加载计算口径…</p>
         </div>
       </section>
 

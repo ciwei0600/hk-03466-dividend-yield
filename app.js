@@ -1,17 +1,29 @@
-const DATA_SOURCES = [
-  {
-    daily: "./runtime-data/03466_ttm_dividend_yield_daily_annualized.csv",
-    dividends: "./runtime-data/03466_dividends_source_hsi.csv",
-    constituents: "./runtime-data/03466_hshd30_constituents_hsi.csv",
-    constituentsSummary: "./runtime-data/constituents_summary.json",
+const FUNDS = {
+  "03466": {
+    name: "03466.HK · 恒生高息股 30 ETF", currency: "HKD", decimals: 2,
+    daily: "03466_ttm_dividend_yield_daily_annualized.csv", dividends: "03466_dividends_source_hsi.csv",
+    summary: "summary.json", constituents: "03466_hshd30_constituents_hsi.csv", constituentsSummary: "constituents_summary.json",
+    dividendField: "annualized_dividend_hkd", yieldField: "annualized_dividend_yield_pct", count: 30,
+    index: "HSHD30 · 恒生高息股 30", dividendLabel: "年化股息 / 份", yieldLabel: "年化股息率",
+    calculation: "03466：按除息日取最近最多 12 次月度分派；不足 12 次时，用最近一次月息补足，再除以当日未复权收盘价。金额单位为港元／份；首次除息前不绘制股息率。",
   },
-  {
-    daily: "./assets/03466_ttm_dividend_yield_daily_annualized.csv",
-    dividends: "./assets/03466_dividends_source_hsi.csv",
-    constituents: "./assets/03466_hshd30_constituents_hsi.csv",
-    constituentsSummary: "./assets/constituents_summary.json",
+  "515080": {
+    name: "515080.SH · 招商中证红利 ETF", currency: "CNY", decimals: 3,
+    daily: "515080_ttm_dividend_yield_daily.csv", dividends: "515080_dividends_source_cmf.csv",
+    summary: "515080_summary.json", constituents: "515080_csi_dividend_constituents.csv", constituentsSummary: "515080_constituents_summary.json",
+    dividendField: "ttm_dividend_cny", yieldField: "ttm_dividend_yield_pct", count: 100,
+    index: "000922 · 中证红利", dividendLabel: "TTM 现金分红 / 份", yieldLabel: "TTM 股息率",
+    calculation: "515080：汇总当日及过去 365 天内已除息的实际现金分红，再除以当日未复权收盘价。公告的每 10 份金额先除以 10，换算成人民币／份。季度及更早的非固定频率分红均按实际金额计入，不补足到 12 次；首次除息前不绘制股息率。",
   },
-];
+};
+let activeFundId = "03466";
+let activeFund = FUNDS[activeFundId];
+let loadToken = 0;
+function dataSources(fund) {
+  return ["runtime-data", "assets"].map((directory) => Object.fromEntries(
+    ["daily", "dividends", "summary", "constituents", "constituentsSummary"].map((key) => [key, `./${directory}/${fund[key]}`]),
+  ));
+}
 
 const chart = document.querySelector("#yieldChart");
 const readout = document.querySelector("#pointReadout");
@@ -78,8 +90,8 @@ function formatPercent(value) {
   return `${value.toFixed(2)}%`;
 }
 
-function formatHkd(value) {
-  return `${value.toFixed(2)} HKD`;
+function formatCurrency(value) {
+  return `${value.toFixed(activeFund.decimals)} ${activeFund.currency}`;
 }
 
 function makeSvgElement(tag, attrs = {}) {
@@ -91,25 +103,31 @@ function makeSvgElement(tag, attrs = {}) {
 function updateReadout(row) {
   if (!row) return;
   readout.querySelector('[data-field="trade_date"]').textContent = row.tradeDate;
-  readout.querySelector('[data-field="close"]').textContent = formatHkd(row.close);
-  readout.querySelector('[data-field="annualized_dividend_hkd"]').textContent = formatHkd(row.annualizedDividend);
-  readout.querySelector('[data-field="annualized_dividend_yield_pct"]').textContent = formatPercent(row.yieldPct);
+  readout.querySelector('[data-field="close"]').textContent = formatCurrency(row.close);
+  readout.querySelector('[data-field="annualized_dividend"]').textContent = formatCurrency(row.annualizedDividend);
+  readout.querySelector('[data-field="dividend_yield_pct"]').textContent = formatPercent(row.yieldPct);
 }
 
 function updateLatestMetrics(row) {
   if (!row) return;
   document.querySelector('[data-latest-field="trade_date"]').textContent = row.tradeDate;
-  document.querySelector('[data-latest-field="close"]').textContent = formatHkd(row.close);
-  document.querySelector('[data-latest-field="annualized_dividend_hkd"]').textContent = formatHkd(row.annualizedDividend);
-  document.querySelector('[data-latest-field="annualized_dividend_yield_pct"]').textContent = formatPercent(row.yieldPct);
+  document.querySelector('[data-latest-field="close"]').textContent = formatCurrency(row.close);
+  document.querySelector('[data-latest-field="annualized_dividend"]').textContent = formatCurrency(row.annualizedDividend);
+  document.querySelector('[data-latest-field="dividend_yield_pct"]').textContent = formatPercent(row.yieldPct);
 }
 
-async function fetchFirstAvailableCsv() {
-  for (const source of DATA_SOURCES) {
+async function fetchFirstAvailableCsv(fund) {
+  for (const source of dataSources(fund)) {
     try {
-      const response = await fetch(source.daily, { cache: "no-store" });
-      if (!response.ok) continue;
-      return { csv: await response.text(), source };
+      const [response, summaryResponse] = await Promise.all([
+        fetch(source.daily, { cache: "no-store" }), fetch(source.summary, { cache: "no-store" }),
+      ]);
+      if (!response.ok || !summaryResponse.ok) continue;
+      const csv = await response.text();
+      const summary = await summaryResponse.json();
+      const records = parseCsv(csv);
+      if (!records.length || records.at(-1).trade_date !== summary.latest.trade_date) continue;
+      return { csv, source, summary };
     } catch (error) {
       console.warn(`failed to load ${source.daily}`, error);
     }
@@ -117,8 +135,8 @@ async function fetchFirstAvailableCsv() {
   throw new Error("No dividend yield CSV source is available");
 }
 
-async function fetchConstituentSnapshot() {
-  for (const source of DATA_SOURCES) {
+async function fetchConstituentSnapshot(fund) {
+  for (const source of dataSources(fund)) {
     try {
       const [csvResponse, summaryResponse] = await Promise.all([
         fetch(source.constituents, { cache: "no-store" }),
@@ -208,17 +226,18 @@ function renderConstituentChanges(summary) {
   constituentChanges.textContent = "与上一次成功快照相比，未发现成分股变更。";
 }
 
-async function initConstituents() {
-  const snapshot = await fetchConstituentSnapshot();
+async function initConstituents(fund, token) {
+  const snapshot = await fetchConstituentSnapshot(fund);
+  if (token !== loadToken) return;
   const expectedCount = Number(snapshot.summary.expected_count || 30);
   const isSynced = snapshot.summary.sync_status === "synced"
     && snapshot.rows.length === expectedCount
     && snapshot.summary.count_matches_official === true
-    && snapshot.summary.holdings_match_constituents === true
-    && Number(snapshot.summary.holdings_count) === expectedCount
-    && Number(snapshot.summary.profiles_count) === expectedCount;
+    && (fund.currency === "CNY" || (snapshot.summary.holdings_match_constituents === true
+      && Number(snapshot.summary.holdings_count) === expectedCount
+      && Number(snapshot.summary.profiles_count) === expectedCount));
 
-  constituentStatus.textContent = isSynced ? "官网已同步" : "同步待核对";
+  constituentStatus.textContent = isSynced ? "指数官网已同步" : "同步待核对";
   constituentStatus.classList.toggle("is-warning", !isSynced);
   constituentCount.textContent = `${snapshot.rows.length} / ${expectedCount}`;
   constituentUpdatedAt.textContent = formatOfficialTime(snapshot.summary.official_updated_at);
@@ -226,6 +245,10 @@ async function initConstituents() {
   constituentSyncedAt.textContent = formatSyncedTime(snapshot.summary.synced_at);
   constituentCsvLink.href = snapshot.source.constituents;
   renderConstituentChanges(snapshot.summary);
+  if (fund.currency === "CNY") {
+    document.querySelector("#tableCaption").textContent = `按基金报告持仓比例排序。基金持仓为 ${snapshot.summary.holdings_as_of} 中期报告的指数投资部分，占净资产合计 ${snapshot.summary.holding_weight_total_pct}%；指数权重为 ${snapshot.summary.index_weights_as_of}，两者资料日期与口径不同。`;
+    document.querySelector("#constituentSourceNote").innerHTML = `每天 07:10 CST 核对中证指数官网成分与变更。基金持仓按已核验定期报告披露日期展示，新报告更新前保留上次披露值；不代表实时持仓。<a href="${snapshot.summary.source_url}" target="_blank" rel="noopener">官方成分表</a> · <a href="${snapshot.summary.index_weight_source_url}" target="_blank" rel="noopener">官方指数权重</a> · <a href="${snapshot.summary.holdings_source_url}" target="_blank" rel="noopener">招商基金持仓报告</a>。行业来自 Data_Server；主营业务简介待补齐。`;
+  }
 
   constituentTableBody.textContent = "";
   snapshot.rows.forEach((row, index) => {
@@ -243,8 +266,15 @@ async function initConstituents() {
     const weightCell = document.createElement("td");
     weightCell.className = "holding-weight";
     const weight = toNumber(row.weight_pct);
-    weightCell.textContent = weight === null ? "-" : formatPercent(weight);
+    weightCell.textContent = weight === null ? "未披露" : formatPercent(weight);
     tr.appendChild(weightCell);
+    if (fund.currency === "CNY") {
+      const indexWeightCell = document.createElement("td");
+      indexWeightCell.className = "holding-weight";
+      const weight = toNumber(row.index_weight_pct);
+      indexWeightCell.textContent = weight === null ? "未披露" : `${weight.toFixed(3)}%`;
+      tr.appendChild(indexWeightCell);
+    }
 
     const companyCell = document.createElement("td");
     const companyName = document.createElement("strong");
@@ -259,9 +289,9 @@ async function initConstituents() {
     const businessCell = document.createElement("td");
     businessCell.className = "business-summary";
     const businessText = document.createElement("span");
-    businessText.textContent = row.business_summary || "-";
+    businessText.textContent = fund.currency === "CNY" ? (row.industry_zh || "行业待补齐") : (row.business_summary || "-");
     businessCell.appendChild(businessText);
-    if (row.industry_zh) {
+    if (row.industry_zh && fund.currency !== "CNY") {
       const industry = document.createElement("small");
       industry.textContent = `行业：${row.industry_zh}`;
       businessCell.appendChild(industry);
@@ -288,7 +318,7 @@ function getNearestIndex(x, points) {
 function paddedRange(values) {
   const min = Math.min(...values);
   const max = Math.max(...values);
-  const span = Math.max(max - min, 1);
+  const span = Math.max(max - min, Math.abs(max) * 0.02, 0.01);
   return {
     min: min - span * 0.08,
     max: max + span * 0.08,
@@ -318,9 +348,9 @@ function renderChart() {
   const priceRange = paddedRange(priceValues);
   const minYield = Math.floor(yieldRange.min * 10) / 10;
   const maxYield = Math.ceil(yieldRange.max * 10) / 10;
-  const minPrice = Math.floor(priceRange.min);
-  const maxPrice = Math.ceil(priceRange.max);
-  const xScale = (date) => margin.left + ((date.getTime() - minTime) / (maxTime - minTime)) * plotWidth;
+  const minPrice = priceRange.min;
+  const maxPrice = priceRange.max;
+  const xScale = (date) => margin.left + ((date.getTime() - minTime) / (maxTime - minTime || 1)) * plotWidth;
   const yieldScale = (value) => margin.top + ((maxYield - value) / (maxYield - minYield)) * plotHeight;
   const priceScale = (value) => margin.top + ((maxPrice - value) / (maxPrice - minPrice)) * plotHeight;
   const yieldPoints = rows.map((row) => ({ x: xScale(row.date), y: yieldScale(row.yieldPct) }));
@@ -358,7 +388,7 @@ function renderChart() {
       y: y + 4,
       "text-anchor": "start",
     });
-    priceLabel.textContent = priceValue.toFixed(1);
+    priceLabel.textContent = priceValue.toFixed(activeFund.decimals === 3 ? 2 : 1);
     axis.appendChild(priceLabel);
   }
 
@@ -369,7 +399,7 @@ function renderChart() {
     seenMonths.add(month);
     return true;
   });
-  const stride = isPhone ? 4 : isCompact ? 3 : 2;
+  const stride = Math.max(1, Math.ceil(monthTicks.length / (isPhone ? 4 : isCompact ? 6 : 10)));
   monthTicks.forEach((row, index) => {
     if (index % stride !== 0) return;
     const x = xScale(row.date);
@@ -410,7 +440,7 @@ function renderChart() {
     y2: legendY,
   }));
   const priceLegend = makeSvgElement("text", { x: priceLegendX + 28, y: legendY + 4 });
-  priceLegend.textContent = "收盘价";
+  priceLegend.textContent = `收盘价 (${activeFund.currency})`;
   legend.appendChild(priceLegend);
   chart.appendChild(legend);
 
@@ -453,7 +483,7 @@ function renderChart() {
       r: isPhone ? 11 : 7,
       tabindex: 0,
       role: "button",
-      "aria-label": `${rows[index].tradeDate} ${formatPercent(rows[index].yieldPct)} ${formatHkd(rows[index].close)}`,
+      "aria-label": `${rows[index].tradeDate} ${formatPercent(rows[index].yieldPct)} ${formatCurrency(rows[index].close)}`,
     });
     hit.addEventListener("click", () => {
       selectedIndex = index;
@@ -495,38 +525,85 @@ function renderChart() {
   }));
 }
 
-async function init() {
-  const { csv, source } = await fetchFirstAvailableCsv();
-  if (dailyCsvLink) dailyCsvLink.href = source.daily;
-  if (dividendCsvLink) dividendCsvLink.href = source.dividends;
-  rows = parseCsv(csv)
-    .map((row) => ({
-      tradeDate: row.trade_date,
-      date: new Date(`${row.trade_date}T00:00:00+08:00`),
-      close: toNumber(row.close),
-      annualizedDividend: toNumber(row.annualized_dividend_hkd),
-      yieldPct: toNumber(row.annualized_dividend_yield_pct),
-    }))
-    .filter((row) => row.close !== null && row.annualizedDividend !== null && row.yieldPct !== null);
-  selectedIndex = rows.length - 1;
-  updateLatestMetrics(rows[selectedIndex]);
-  updateReadout(rows[selectedIndex]);
-  renderChart();
-  window.addEventListener("resize", renderChart);
-  try {
-    await initConstituents();
-  } catch (error) {
+const hkSourceNote = document.querySelector("#constituentSourceNote").innerHTML;
+
+async function switchFund(id) {
+  if (!FUNDS[id]) return;
+  const token = ++loadToken;
+  activeFundId = id;
+  activeFund = FUNDS[id];
+  const fund = activeFund;
+  rows = [];
+  selectedIndex = -1;
+  chart.textContent = "";
+  document.querySelectorAll("[data-latest-field], [data-field]").forEach((el) => { el.textContent = "—"; });
+  document.querySelectorAll("[data-fund]").forEach((el) => el.setAttribute("aria-pressed", String(el.dataset.fund === id)));
+  document.querySelectorAll("[data-dividend-label]").forEach((el) => { el.textContent = fund.dividendLabel; });
+  document.querySelectorAll("[data-yield-label]").forEach((el) => { el.textContent = fund.yieldLabel; });
+  document.querySelector("#fundTitle").textContent = fund.name;
+  chart.setAttribute("aria-label", `${fund.name} 每日股息率与收盘价交互折线图`);
+  document.querySelector("#calculationNote").textContent = fund.calculation;
+  document.querySelector("#indexName").textContent = fund.index;
+  document.querySelector("#companyInfoLabel").textContent = fund.currency === "CNY" ? "行业" : "主营业务";
+  document.querySelector("#holdingWeightLabel").textContent = fund.currency === "CNY" ? "基金持仓（报告）" : "基金持仓";
+  document.querySelector("[data-index-weight]").hidden = fund.currency !== "CNY";
+  document.querySelector("#holdingsDateLabel").textContent = fund.currency === "CNY" ? "基金持仓报告日期" : "基金持仓日期";
+  document.querySelector("#tableCaption").textContent = fund.currency === "CNY" ? "正在核对成分股与持仓报告…" : "按 03466 官网持股比例排序；公司名称和主营业务来自港交所官网。";
+  document.querySelector("#constituentSourceNote").innerHTML = fund.currency === "CNY" ? "" : hkSourceNote;
+  document.querySelector(".constituent-table").classList.toggle("cn-table", fund.currency === "CNY");
+  const status = document.querySelector("#dataStatus");
+  status.textContent = "正在加载数据…";
+  status.classList.remove("is-warning");
+  [dailyCsvLink, dividendCsvLink, constituentCsvLink].forEach((el) => { el.removeAttribute("href"); el.setAttribute("aria-disabled", "true"); });
+  constituentTableBody.innerHTML = '<tr><td colspan="6">正在加载官网成分股…</td></tr>';
+  [constituentUpdatedAt, holdingsAsOf, constituentSyncedAt].forEach((el) => { el.textContent = "—"; });
+  constituentCount.textContent = `— / ${fund.count}`;
+  constituentStatus.textContent = "正在核对官网";
+  constituentChanges.textContent = "正在读取成分变更…";
+  const url = new URL(window.location.href);
+  url.searchParams.set("fund", id);
+  history.replaceState(null, "", url);
+  const constituentPromise = initConstituents(fund, token).then(() => {
+    if (token === loadToken) constituentCsvLink.removeAttribute("aria-disabled");
+  }).catch((error) => {
+    if (token !== loadToken) return;
     console.error(error);
-    if (constituentStatus) {
-      constituentStatus.textContent = "成分股加载失败";
-      constituentStatus.classList.add("is-warning");
-    }
+    constituentStatus.textContent = "成分股加载失败";
+    constituentStatus.classList.add("is-warning");
+    constituentTableBody.innerHTML = '<tr><td colspan="6">暂无可验证的成分股快照，请稍后重试。</td></tr>';
+    constituentChanges.textContent = "成分变更暂不可用";
+  });
+  try {
+    const { csv, source, summary } = await fetchFirstAvailableCsv(fund);
+    if (token !== loadToken) return;
+    rows = parseCsv(csv).map((row) => ({
+      tradeDate: row.trade_date, date: new Date(`${row.trade_date}T00:00:00+08:00`),
+      close: toNumber(row.close), annualizedDividend: toNumber(row[fund.dividendField]), yieldPct: toNumber(row[fund.yieldField]),
+    })).filter((row) => row.close !== null && row.annualizedDividend !== null && row.yieldPct !== null);
+    if (!rows.length) throw new Error("No valid dividend yield rows");
+    dailyCsvLink.href = source.daily;
+    dividendCsvLink.href = source.dividends;
+    [dailyCsvLink, dividendCsvLink].forEach((el) => el.removeAttribute("aria-disabled"));
+    selectedIndex = rows.length - 1;
+    updateLatestMetrics(rows[selectedIndex]);
+    updateReadout(rows[selectedIndex]);
+    renderChart();
+    const isRelease = source.daily.includes("/assets/");
+    const temporary = summary.temporary_price_source ? "；未复权行情暂用腾讯日线，待 Data_Server 补齐后切回" : "；行情来自 Data_Server";
+    status.textContent = `${isRelease ? "使用发布快照；" : ""}数据生成：${formatSyncedTime(summary.updated_at)}；交易日 ${summary.latest.trade_date}${temporary}。`;
+    status.classList.toggle("is-warning", isRelease);
+  } catch (error) {
+    if (token !== loadToken) return;
+    console.error(error);
+    status.textContent = "行情或分红加载失败，请稍后重试。";
+    status.classList.add("is-warning");
   }
+  await constituentPromise;
 }
 
-init().catch((error) => {
-  console.error(error);
-  if (readout) {
-    readout.querySelector('[data-field="trade_date"]').textContent = "加载失败";
-  }
+document.querySelectorAll("[data-fund]").forEach((button) => {
+  button.addEventListener("click", () => switchFund(button.dataset.fund));
 });
+window.addEventListener("resize", renderChart);
+const requestedFund = new URLSearchParams(window.location.search).get("fund");
+switchFund(FUNDS[requestedFund] ? requestedFund : "03466");

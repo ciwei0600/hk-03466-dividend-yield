@@ -45,7 +45,7 @@ HKEX_QUOTE_API_URL = "https://www1.hkex.com.hk/hkexwidget/data/getequityquote"
 HKEX_QUOTE_PAGE_URL = (
     "https://www.hkex.com.hk/Market-Data/Securities-Prices/Equities/Equities-Quote"
 )
-USER_AGENT = "hk-03466-dividend-yield/0.6.1"
+USER_AGENT = "dividend-etf-monitor/0.7.0"
 
 
 def fetch_bytes(

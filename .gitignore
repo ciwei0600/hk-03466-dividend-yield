@@ -3,3 +3,5 @@ runtime-data/
 *.log
 node_modules/
 .env
+.venv/
+__pycache__/

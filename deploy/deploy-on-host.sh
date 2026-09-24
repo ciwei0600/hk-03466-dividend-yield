@@ -69,16 +69,18 @@ sudo ln -sfn /etc/nginx/sites-available/hk-03466-dividend-yield \
   /etc/nginx/sites-enabled/hk-03466-dividend-yield
 
 mkdir -p "${DEPLOY_ROOT}/runtime-data"
+python3 -m venv "${DEPLOY_ROOT}/.venv"
+"${DEPLOY_ROOT}/.venv/bin/python" -m pip install --disable-pip-version-check -r "${DEPLOY_ROOT}/requirements.txt"
 
 if [[ "${SKIP_DATA_UPDATE:-0}" != "1" ]]; then
   DATA_SERVER_API_BASE="${DATA_SERVER_API_BASE:-http://100.77.62.83:8010}" \
   DATA_SERVER_CONSUMER_ID="${DATA_SERVER_CONSUMER_ID:-cash-ranking}" \
-  python3 "${DEPLOY_ROOT}/scripts/update-data.py"
-  python3 "${DEPLOY_ROOT}/scripts/update-data.py" --constituents-only
+  "${DEPLOY_ROOT}/.venv/bin/python" "${DEPLOY_ROOT}/scripts/update-all.py"
+  "${DEPLOY_ROOT}/.venv/bin/python" "${DEPLOY_ROOT}/scripts/update-all.py" --constituents-only
 fi
 
-DATA_CRON_CMD="cd ${DEPLOY_ROOT} && DATA_SERVER_API_BASE=${DATA_SERVER_API_BASE:-http://100.77.62.83:8010} DATA_SERVER_CONSUMER_ID=${DATA_SERVER_CONSUMER_ID:-cash-ranking} /usr/bin/python3 scripts/update-data.py >> runtime-data/update-data.log 2>&1"
-CONSTITUENT_CRON_CMD="cd ${DEPLOY_ROOT} && /usr/bin/python3 scripts/update-data.py --constituents-only >> runtime-data/update-constituents.log 2>&1"
+DATA_CRON_CMD="cd ${DEPLOY_ROOT} && DATA_SERVER_API_BASE=${DATA_SERVER_API_BASE:-http://100.77.62.83:8010} DATA_SERVER_CONSUMER_ID=${DATA_SERVER_CONSUMER_ID:-cash-ranking} ${DEPLOY_ROOT}/.venv/bin/python scripts/update-all.py >> runtime-data/update-data.log 2>&1"
+CONSTITUENT_CRON_CMD="cd ${DEPLOY_ROOT} && ${DEPLOY_ROOT}/.venv/bin/python scripts/update-all.py --constituents-only >> runtime-data/update-constituents.log 2>&1"
 DATA_CRON_MARKER="# hk-03466-dividend-yield weekday close update"
 CONSTITUENT_CRON_MARKER="# hk-03466-dividend-yield daily constituent update"
 DATA_CRON_LINE="5 18 * * 1-5 ${DATA_CRON_CMD}"
@@ -88,7 +90,8 @@ CONSTITUENT_CRON_LINE="10 7 * * * ${CONSTITUENT_CRON_CMD}"
     | grep -v -F "hk-03466-dividend-yield daily close update" \
     | grep -v -F "${DATA_CRON_MARKER}" \
     | grep -v -F "${CONSTITUENT_CRON_MARKER}" \
-    | grep -v -F "scripts/update-data.py" || true
+    | grep -v -F "scripts/update-data.py" \
+    | grep -v -F "scripts/update-all.py" || true
   echo "${DATA_CRON_MARKER}"
   echo "${DATA_CRON_LINE}"
   echo "${CONSTITUENT_CRON_MARKER}"

@@ -1,0 +1,713 @@
+{
+  "fund_code": "515080",
+  "holdings_as_of": "2026-06-30",
+  "published_at": "2026-08-31",
+  "scope": "index_investment",
+  "weight_basis": "fund_net_assets",
+  "source_url": "https://static.cmfchina.com/fundarticle/20260831/20025174965674.pdf",
+  "source_sha256": "dd692b4e07656fa909b2c6f2d33304e980a62dcfa12bef6ee14a2639c501a0b1",
+  "report_section": "7.3.1",
+  "holding_weight_total_pct": 99.39,
+  "items": [
+    {
+      "symbol": "601919",
+      "name": "中远海控",
+      "quantity": 24591757,
+      "market_value_cny": 326086697.82,
+      "weight_pct": 2.82
+    },
+    {
+      "symbol": "000672",
+      "name": "上峰材料",
+      "quantity": 11037880,
+      "market_value_cny": 261376998.4,
+      "weight_pct": 2.26
+    },
+    {
+      "symbol": "603565",
+      "name": "中谷物流",
+      "quantity": 23308004,
+      "market_value_cny": 228651519.24,
+      "weight_pct": 1.98
+    },
+    {
+      "symbol": "601699",
+      "name": "潞安环能",
+      "quantity": 15620693,
+      "market_value_cny": 223063496.04,
+      "weight_pct": 1.93
+    },
+    {
+      "symbol": "600188",
+      "name": "兖矿能源",
+      "quantity": 12489353,
+      "market_value_cny": 221935802.81,
+      "weight_pct": 1.92
+    },
+    {
+      "symbol": "600256",
+      "name": "广汇能源",
+      "quantity": 44026347,
+      "market_value_cny": 217490154.18,
+      "weight_pct": 1.88
+    },
+    {
+      "symbol": "600546",
+      "name": "山煤国际",
+      "quantity": 18251331,
+      "market_value_cny": 199487047.83,
+      "weight_pct": 1.73
+    },
+    {
+      "symbol": "600985",
+      "name": "淮北矿业",
+      "quantity": 13049471,
+      "market_value_cny": 183345067.55,
+      "weight_pct": 1.59
+    },
+    {
+      "symbol": "601101",
+      "name": "昊华能源",
+      "quantity": 16402051,
+      "market_value_cny": 173205658.56,
+      "weight_pct": 1.5
+    },
+    {
+      "symbol": "601666",
+      "name": "平煤股份",
+      "quantity": 23462401,
+      "market_value_cny": 167756167.15,
+      "weight_pct": 1.45
+    },
+    {
+      "symbol": "601225",
+      "name": "陕西煤业",
+      "quantity": 8042977,
+      "market_value_cny": 163674581.95,
+      "weight_pct": 1.42
+    },
+    {
+      "symbol": "601168",
+      "name": "西部矿业",
+      "quantity": 5964800,
+      "market_value_cny": 161884672.0,
+      "weight_pct": 1.4
+    },
+    {
+      "symbol": "600177",
+      "name": "雅戈尔",
+      "quantity": 21272469,
+      "market_value_cny": 160181691.57,
+      "weight_pct": 1.39
+    },
+    {
+      "symbol": "000983",
+      "name": "山西焦煤",
+      "quantity": 27220190,
+      "market_value_cny": 157877102.0,
+      "weight_pct": 1.37
+    },
+    {
+      "symbol": "600295",
+      "name": "鄂尔多斯",
+      "quantity": 14625520,
+      "market_value_cny": 156785574.4,
+      "weight_pct": 1.36
+    },
+    {
+      "symbol": "601001",
+      "name": "晋控煤业",
+      "quantity": 8976284,
+      "market_value_cny": 156097578.76,
+      "weight_pct": 1.35
+    },
+    {
+      "symbol": "600350",
+      "name": "山东高速",
+      "quantity": 13021201,
+      "market_value_cny": 144925967.13,
+      "weight_pct": 1.26
+    },
+    {
+      "symbol": "002756",
+      "name": "永兴材料",
+      "quantity": 2520500,
+      "market_value_cny": 142761120.0,
+      "weight_pct": 1.24
+    },
+    {
+      "symbol": "600919",
+      "name": "江苏银行",
+      "quantity": 13207113,
+      "market_value_cny": 142372678.14,
+      "weight_pct": 1.23
+    },
+    {
+      "symbol": "601838",
+      "name": "成都银行",
+      "quantity": 7910200,
+      "market_value_cny": 140010540.0,
+      "weight_pct": 1.21
+    },
+    {
+      "symbol": "600348",
+      "name": "华阳股份",
+      "quantity": 18289967,
+      "market_value_cny": 139918247.55,
+      "weight_pct": 1.21
+    },
+    {
+      "symbol": "000408",
+      "name": "藏格矿业",
+      "quantity": 1960800,
+      "market_value_cny": 135922656.0,
+      "weight_pct": 1.18
+    },
+    {
+      "symbol": "600153",
+      "name": "建发股份",
+      "quantity": 16367782,
+      "market_value_cny": 129796511.26,
+      "weight_pct": 1.12
+    },
+    {
+      "symbol": "601857",
+      "name": "中国石油",
+      "quantity": 14952097,
+      "market_value_cny": 129784201.96,
+      "weight_pct": 1.12
+    },
+    {
+      "symbol": "000651",
+      "name": "格力电器",
+      "quantity": 3434700,
+      "market_value_cny": 128801250.0,
+      "weight_pct": 1.12
+    },
+    {
+      "symbol": "600015",
+      "name": "华夏银行",
+      "quantity": 20151294,
+      "market_value_cny": 128766768.66,
+      "weight_pct": 1.12
+    },
+    {
+      "symbol": "601077",
+      "name": "渝农商行",
+      "quantity": 21064689,
+      "market_value_cny": 128705249.79,
+      "weight_pct": 1.11
+    },
+    {
+      "symbol": "600398",
+      "name": "海澜之家",
+      "quantity": 24519763,
+      "market_value_cny": 128238360.49,
+      "weight_pct": 1.11
+    },
+    {
+      "symbol": "601000",
+      "name": "唐山港",
+      "quantity": 30433477,
+      "market_value_cny": 126298929.55,
+      "weight_pct": 1.09
+    },
+    {
+      "symbol": "601229",
+      "name": "上海银行",
+      "quantity": 14499334,
+      "market_value_cny": 125854219.12,
+      "weight_pct": 1.09
+    },
+    {
+      "symbol": "600901",
+      "name": "江苏金租",
+      "quantity": 21640324,
+      "market_value_cny": 124431863.0,
+      "weight_pct": 1.08
+    },
+    {
+      "symbol": "000429",
+      "name": "粤高速 A",
+      "quantity": 9108381,
+      "market_value_cny": 124329400.65,
+      "weight_pct": 1.08
+    },
+    {
+      "symbol": "601088",
+      "name": "中国神华",
+      "quantity": 3173604,
+      "market_value_cny": 123897500.16,
+      "weight_pct": 1.07
+    },
+    {
+      "symbol": "600039",
+      "name": "四川路桥",
+      "quantity": 15720678,
+      "market_value_cny": 122935701.96,
+      "weight_pct": 1.06
+    },
+    {
+      "symbol": "601939",
+      "name": "建设银行",
+      "quantity": 12741231,
+      "market_value_cny": 122698054.53,
+      "weight_pct": 1.06
+    },
+    {
+      "symbol": "601988",
+      "name": "中国银行",
+      "quantity": 21258981,
+      "market_value_cny": 121601371.32,
+      "weight_pct": 1.05
+    },
+    {
+      "symbol": "600096",
+      "name": "云天化",
+      "quantity": 3963468,
+      "market_value_cny": 120489427.2,
+      "weight_pct": 1.04
+    },
+    {
+      "symbol": "601169",
+      "name": "北京银行",
+      "quantity": 24481002,
+      "market_value_cny": 119956909.8,
+      "weight_pct": 1.04
+    },
+    {
+      "symbol": "002867",
+      "name": "周大生",
+      "quantity": 10658700,
+      "market_value_cny": 118844505.0,
+      "weight_pct": 1.03
+    },
+    {
+      "symbol": "600938",
+      "name": "中国海油",
+      "quantity": 4348000,
+      "market_value_cny": 118048200.0,
+      "weight_pct": 1.02
+    },
+    {
+      "symbol": "600755",
+      "name": "厦门国贸",
+      "quantity": 21700206,
+      "market_value_cny": 117615116.52,
+      "weight_pct": 1.02
+    },
+    {
+      "symbol": "600012",
+      "name": "皖通高速",
+      "quantity": 7345674,
+      "market_value_cny": 115767822.24,
+      "weight_pct": 1.0
+    },
+    {
+      "symbol": "601916",
+      "name": "浙商银行",
+      "quantity": 43702276,
+      "market_value_cny": 114936985.88,
+      "weight_pct": 1.0
+    },
+    {
+      "symbol": "601963",
+      "name": "重庆银行",
+      "quantity": 11285025,
+      "market_value_cny": 113753052.0,
+      "weight_pct": 0.99
+    },
+    {
+      "symbol": "002601",
+      "name": "龙佰集团",
+      "quantity": 6833900,
+      "market_value_cny": 112622672.0,
+      "weight_pct": 0.98
+    },
+    {
+      "symbol": "601187",
+      "name": "厦门银行",
+      "quantity": 16480550,
+      "market_value_cny": 112562156.5,
+      "weight_pct": 0.97
+    },
+    {
+      "symbol": "600282",
+      "name": "南钢股份",
+      "quantity": 24475321,
+      "market_value_cny": 112341723.39,
+      "weight_pct": 0.97
+    },
+    {
+      "symbol": "601328",
+      "name": "交通银行",
+      "quantity": 17391458,
+      "market_value_cny": 111827074.94,
+      "weight_pct": 0.97
+    },
+    {
+      "symbol": "601166",
+      "name": "兴业银行",
+      "quantity": 6739644,
+      "market_value_cny": 111608504.64,
+      "weight_pct": 0.97
+    },
+    {
+      "symbol": "000895",
+      "name": "双汇发展",
+      "quantity": 4974500,
+      "market_value_cny": 111428800.0,
+      "weight_pct": 0.97
+    },
+    {
+      "symbol": "601398",
+      "name": "工商银行",
+      "quantity": 15758172,
+      "market_value_cny": 111410276.04,
+      "weight_pct": 0.97
+    },
+    {
+      "symbol": "601009",
+      "name": "南京银行",
+      "quantity": 11147042,
+      "market_value_cny": 110244245.38,
+      "weight_pct": 0.95
+    },
+    {
+      "symbol": "601998",
+      "name": "中信银行",
+      "quantity": 15847628,
+      "market_value_cny": 109824062.04,
+      "weight_pct": 0.95
+    },
+    {
+      "symbol": "601216",
+      "name": "君正集团",
+      "quantity": 23977517,
+      "market_value_cny": 106939725.82,
+      "weight_pct": 0.93
+    },
+    {
+      "symbol": "600461",
+      "name": "洪城环境",
+      "quantity": 11610231,
+      "market_value_cny": 105188692.86,
+      "weight_pct": 0.91
+    },
+    {
+      "symbol": "301109",
+      "name": "军信股份",
+      "quantity": 8438150,
+      "market_value_cny": 105139349.0,
+      "weight_pct": 0.91
+    },
+    {
+      "symbol": "601006",
+      "name": "大秦铁路",
+      "quantity": 22765121,
+      "market_value_cny": 104947207.81,
+      "weight_pct": 0.91
+    },
+    {
+      "symbol": "601818",
+      "name": "光大银行",
+      "quantity": 35712774,
+      "market_value_cny": 103209916.86,
+      "weight_pct": 0.89
+    },
+    {
+      "symbol": "601658",
+      "name": "邮储银行",
+      "quantity": 20580278,
+      "market_value_cny": 101460770.54,
+      "weight_pct": 0.88
+    },
+    {
+      "symbol": "601997",
+      "name": "贵阳银行",
+      "quantity": 19724233,
+      "market_value_cny": 101185315.29,
+      "weight_pct": 0.88
+    },
+    {
+      "symbol": "600737",
+      "name": "中粮糖业",
+      "quantity": 8072900,
+      "market_value_cny": 99538857.0,
+      "weight_pct": 0.86
+    },
+    {
+      "symbol": "600036",
+      "name": "招商银行",
+      "quantity": 2789710,
+      "market_value_cny": 99034705.0,
+      "weight_pct": 0.86
+    },
+    {
+      "symbol": "002043",
+      "name": "兔宝宝",
+      "quantity": 8915700,
+      "market_value_cny": 98785956.0,
+      "weight_pct": 0.86
+    },
+    {
+      "symbol": "601825",
+      "name": "沪农商行",
+      "quantity": 13153410,
+      "market_value_cny": 98519040.9,
+      "weight_pct": 0.85
+    },
+    {
+      "symbol": "002563",
+      "name": "森马服饰",
+      "quantity": 19258300,
+      "market_value_cny": 97061832.0,
+      "weight_pct": 0.84
+    },
+    {
+      "symbol": "600016",
+      "name": "民生银行",
+      "quantity": 30137211,
+      "market_value_cny": 97041819.42,
+      "weight_pct": 0.84
+    },
+    {
+      "symbol": "601288",
+      "name": "农业银行",
+      "quantity": 15895706,
+      "market_value_cny": 96486935.42,
+      "weight_pct": 0.84
+    },
+    {
+      "symbol": "600028",
+      "name": "中国石化",
+      "quantity": 21435862,
+      "market_value_cny": 95603944.52,
+      "weight_pct": 0.83
+    },
+    {
+      "symbol": "600064",
+      "name": "南京高科",
+      "quantity": 13109004,
+      "market_value_cny": 93467198.52,
+      "weight_pct": 0.81
+    },
+    {
+      "symbol": "601098",
+      "name": "中南传媒",
+      "quantity": 9491719,
+      "market_value_cny": 93398514.96,
+      "weight_pct": 0.81
+    },
+    {
+      "symbol": "601928",
+      "name": "凤凰传媒",
+      "quantity": 10495575,
+      "market_value_cny": 92256104.25,
+      "weight_pct": 0.8
+    },
+    {
+      "symbol": "601598",
+      "name": "中国外运",
+      "quantity": 18143001,
+      "market_value_cny": 89989284.96,
+      "weight_pct": 0.78
+    },
+    {
+      "symbol": "600273",
+      "name": "嘉化能源",
+      "quantity": 13740135,
+      "market_value_cny": 89585680.2,
+      "weight_pct": 0.78
+    },
+    {
+      "symbol": "601668",
+      "name": "中国建筑",
+      "quantity": 20413742,
+      "market_value_cny": 88595640.28,
+      "weight_pct": 0.77
+    },
+    {
+      "symbol": "000933",
+      "name": "神火股份",
+      "quantity": 4159500,
+      "market_value_cny": 88181400.0,
+      "weight_pct": 0.76
+    },
+    {
+      "symbol": "601318",
+      "name": "中国平安",
+      "quantity": 1827294,
+      "market_value_cny": 87235015.56,
+      "weight_pct": 0.76
+    },
+    {
+      "symbol": "600757",
+      "name": "长江传媒",
+      "quantity": 11561906,
+      "market_value_cny": 84517532.86,
+      "weight_pct": 0.73
+    },
+    {
+      "symbol": "600741",
+      "name": "华域汽车",
+      "quantity": 5389055,
+      "market_value_cny": 83638133.6,
+      "weight_pct": 0.72
+    },
+    {
+      "symbol": "000157",
+      "name": "中联重科",
+      "quantity": 11702400,
+      "market_value_cny": 81565728.0,
+      "weight_pct": 0.71
+    },
+    {
+      "symbol": "002416",
+      "name": "爱施德",
+      "quantity": 8812700,
+      "market_value_cny": 78961792.0,
+      "weight_pct": 0.68
+    },
+    {
+      "symbol": "002233",
+      "name": "塔牌集团",
+      "quantity": 11133800,
+      "market_value_cny": 77602586.0,
+      "weight_pct": 0.67
+    },
+    {
+      "symbol": "601019",
+      "name": "山东出版",
+      "quantity": 11890870,
+      "market_value_cny": 76101568.0,
+      "weight_pct": 0.66
+    },
+    {
+      "symbol": "601717",
+      "name": "中创智领",
+      "quantity": 5458000,
+      "market_value_cny": 75920780.0,
+      "weight_pct": 0.66
+    },
+    {
+      "symbol": "600373",
+      "name": "中文传媒",
+      "quantity": 11251052,
+      "market_value_cny": 74594474.76,
+      "weight_pct": 0.65
+    },
+    {
+      "symbol": "600585",
+      "name": "海螺水泥",
+      "quantity": 4176785,
+      "market_value_cny": 70796505.75,
+      "weight_pct": 0.61
+    },
+    {
+      "symbol": "600057",
+      "name": "厦门象屿",
+      "quantity": 12571848,
+      "market_value_cny": 68139416.16,
+      "weight_pct": 0.59
+    },
+    {
+      "symbol": "600729",
+      "name": "重百集团",
+      "quantity": 3586028,
+      "market_value_cny": 67345605.84,
+      "weight_pct": 0.58
+    },
+    {
+      "symbol": "600971",
+      "name": "恒源煤电",
+      "quantity": 9510677,
+      "market_value_cny": 65623671.3,
+      "weight_pct": 0.57
+    },
+    {
+      "symbol": "002572",
+      "name": "索菲亚",
+      "quantity": 8975500,
+      "market_value_cny": 65521150.0,
+      "weight_pct": 0.57
+    },
+    {
+      "symbol": "600502",
+      "name": "安徽建工",
+      "quantity": 12997443,
+      "market_value_cny": 56538877.05,
+      "weight_pct": 0.49
+    },
+    {
+      "symbol": "002154",
+      "name": "报喜鸟",
+      "quantity": 15495300,
+      "market_value_cny": 55163268.0,
+      "weight_pct": 0.48
+    },
+    {
+      "symbol": "603706",
+      "name": "东方环宇",
+      "quantity": 3151300,
+      "market_value_cny": 54485977.0,
+      "weight_pct": 0.47
+    },
+    {
+      "symbol": "600123",
+      "name": "兰花科创",
+      "quantity": 9837098,
+      "market_value_cny": 52530103.32,
+      "weight_pct": 0.46
+    },
+    {
+      "symbol": "603967",
+      "name": "中创物流",
+      "quantity": 5045070,
+      "market_value_cny": 52216474.5,
+      "weight_pct": 0.45
+    },
+    {
+      "symbol": "002267",
+      "name": "陕天然气",
+      "quantity": 7950800,
+      "market_value_cny": 51998232.0,
+      "weight_pct": 0.45
+    },
+    {
+      "symbol": "920599",
+      "name": "同力股份",
+      "quantity": 3104655,
+      "market_value_cny": 51133667.85,
+      "weight_pct": 0.44
+    },
+    {
+      "symbol": "600997",
+      "name": "开滦股份",
+      "quantity": 10314825,
+      "market_value_cny": 48995418.75,
+      "weight_pct": 0.42
+    },
+    {
+      "symbol": "000090",
+      "name": "天健集团",
+      "quantity": 15976300,
+      "market_value_cny": 48088663.0,
+      "weight_pct": 0.42
+    },
+    {
+      "symbol": "002737",
+      "name": "葵花药业",
+      "quantity": 4248028,
+      "market_value_cny": 47620393.88,
+      "weight_pct": 0.41
+    },
+    {
+      "symbol": "002540",
+      "name": "亚太科技",
+      "quantity": 8434700,
+      "market_value_cny": 39390049.0,
+      "weight_pct": 0.34
+    }
+  ]
+}
