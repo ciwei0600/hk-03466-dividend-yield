@@ -27,6 +27,10 @@ function dataSources(fund) {
 }
 
 const chart = document.querySelector("#yieldChart");
+const chartTooltip = document.querySelector("#chartTooltip");
+let tooltipVisible = false;
+let tooltipSeries = "yield";
+let chartLayout = null;
 const readout = document.querySelector("#pointReadout");
 const dailyCsvLink = document.querySelector("#dailyCsvLink");
 const dividendCsvLink = document.querySelector("#dividendCsvLink");
@@ -109,6 +113,63 @@ function selectDate(index) {
   updateReadout(rows[selectedIndex]);
   renderChart();
 }
+
+function hideChartTooltip() {
+  tooltipVisible = false;
+  chartTooltip.hidden = true;
+}
+
+function positionChartTooltip() {
+  if (!tooltipVisible || !chartLayout || !rows[selectedIndex]) {
+    chartTooltip.hidden = true;
+    return;
+  }
+  const host = chart.parentElement;
+  const bounds = host.getBoundingClientRect();
+  if (bounds.bottom <= 0 || bounds.top >= window.innerHeight) {
+    chartTooltip.hidden = true;
+    return;
+  }
+  const row = rows[selectedIndex];
+  [["#tooltipDate", row.tradeDate], ["#tooltipYieldLabel", activeFund.yieldLabel],
+    ["#tooltipYield", formatPercent(row.yieldPct)], ["#tooltipPrice", formatCurrency(row.close)]].forEach(([selector, value]) => {
+    const element = document.querySelector(selector);
+    if (element.textContent !== value) element.textContent = value;
+  });
+  chartTooltip.hidden = false;
+  const points = tooltipSeries === "price" ? chartLayout.pricePoints : chartLayout.yieldPoints;
+  const point = points[selectedIndex - viewStart];
+  const screen = new DOMPoint(point.x, point.y).matrixTransform(chart.getScreenCTM());
+  const x = screen.x - bounds.left;
+  const y = screen.y - bounds.top;
+  const minLeft = Math.max(8, 8 - bounds.left);
+  const maxLeft = Math.min(host.clientWidth, window.innerWidth - bounds.left) - chartTooltip.offsetWidth - 8;
+  const minTop = Math.max(8, 8 - bounds.top);
+  const maxTop = Math.min(host.clientHeight, window.innerHeight - bounds.top) - chartTooltip.offsetHeight - 8;
+  const left = x + 14 <= maxLeft ? x + 14 : x - chartTooltip.offsetWidth - 14;
+  const top = y - chartTooltip.offsetHeight - 14 >= minTop ? y - chartTooltip.offsetHeight - 14 : y + 14;
+  chartTooltip.style.left = `${Math.max(8, Math.min(Math.max(minLeft, left), maxLeft))}px`;
+  chartTooltip.style.top = `${Math.max(8, Math.min(Math.max(minTop, top), maxTop))}px`;
+}
+
+// Resolve the date from the click position, even when adjacent point targets overlap.
+chart.addEventListener("click", (event) => {
+  if (!chartLayout || !rows.length) return;
+  const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(chart.getScreenCTM().inverse());
+  const { margin, width, height, yieldPoints, pricePoints } = chartLayout;
+  if (point.x < margin.left || point.x > width - margin.right || point.y < margin.top || point.y > height - margin.bottom) return;
+  const index = getNearestIndex(point.x, yieldPoints);
+  tooltipSeries = Math.abs(point.y - pricePoints[index].y) < Math.abs(point.y - yieldPoints[index].y) ? "price" : "yield";
+  tooltipVisible = true;
+  selectDate(viewStart + index);
+});
+document.addEventListener("pointerdown", (event) => {
+  if (!chart.closest(".chart-panel").contains(event.target)) hideChartTooltip();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") hideChartTooltip();
+});
+window.addEventListener("scroll", positionChartTooltip, { passive: true });
 
 function initDateControls() {
   viewStart = 0;
@@ -493,6 +554,7 @@ function renderChart() {
   const priceScale = (value) => margin.top + ((maxPrice - value) / (maxPrice - minPrice)) * plotHeight;
   const yieldPoints = visibleRows.map((row) => ({ x: xScale(row.date), y: yieldScale(row.yieldPct) }));
   const pricePoints = visibleRows.map((row) => ({ x: xScale(row.date), y: priceScale(row.close) }));
+  chartLayout = { margin, width, height, yieldPoints, pricePoints };
 
   chart.textContent = "";
   chart.setAttribute("viewBox", `0 0 ${width} ${height}`);
@@ -605,11 +667,6 @@ function renderChart() {
     width: plotWidth,
     height: plotHeight,
   });
-  overlay.addEventListener("click", (event) => {
-    const rect = chart.getBoundingClientRect();
-    const svgX = ((event.clientX - rect.left) / rect.width) * width;
-    selectDate(viewStart + getNearestIndex(svgX, yieldPoints));
-  });
   chart.appendChild(overlay);
 
   const hitLayer = makeSvgElement("g", { class: "hit-layer" });
@@ -622,13 +679,13 @@ function renderChart() {
       role: "button",
       "aria-label": `${visibleRows[index].tradeDate} ${formatPercent(visibleRows[index].yieldPct)} ${formatCurrency(visibleRows[index].close)}`,
     });
-    hit.addEventListener("click", () => {
-      selectDate(viewStart + index);
-    });
     hit.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
+        tooltipVisible = true;
+        tooltipSeries = "yield";
         selectDate(viewStart + index);
+        chart.querySelectorAll(".hit-layer circle")[index].focus({ preventScroll: true });
       }
     });
     hitLayer.appendChild(hit);
@@ -656,6 +713,7 @@ function renderChart() {
     cy: selectedPrice.y,
     r: isPhone ? 6 : 5,
   }));
+  positionChartTooltip();
 }
 
 const hkSourceNote = document.querySelector("#constituentSourceNote").innerHTML;
@@ -666,6 +724,8 @@ async function switchFund(id) {
   activeFundId = id;
   activeFund = FUNDS[id];
   const fund = activeFund;
+  hideChartTooltip();
+  chartLayout = null;
   rows = [];
   selectedIndex = -1;
   viewStart = 0;

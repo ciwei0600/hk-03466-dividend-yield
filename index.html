@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>红利 ETF 股息率与成分股监控</title>
-    <link rel="stylesheet" href="./styles.css?v=0.7.2">
-    <script src="./app.js?v=0.7.2" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=0.7.3">
+    <script src="./app.js?v=0.7.3" defer></script>
   </head>
   <body>
     <main class="shell">
@@ -16,8 +16,8 @@
           <p class="subhead">恒生高息股 30 · 中证红利｜每日收盘价、现金分红与成分股。</p>
         </div>
         <div class="version">
-          <span>v0.7.2</span>
-          <span>2026-09-24 16:41 CST</span>
+          <span>v0.7.3</span>
+          <span>2026-09-24 16:50 CST</span>
         </div>
       </header>
 
@@ -50,6 +50,11 @@
       <section class="chart-panel" aria-label="折线图">
         <div class="chart-wrap">
           <svg id="yieldChart" role="img" aria-label="基金每日股息率与收盘价交互折线图"></svg>
+          <div id="chartTooltip" class="chart-tooltip" role="status" aria-live="polite" aria-atomic="true" hidden>
+            <strong id="tooltipDate" class="tooltip-date"></strong>
+            <div><span id="tooltipYieldLabel">股息率</span><strong id="tooltipYield" class="tooltip-yield"></strong></div>
+            <div><span>收盘价</span><strong id="tooltipPrice" class="tooltip-price"></strong></div>
+          </div>
         </div>
         <fieldset class="date-controls" id="dateControls" disabled>
           <legend>日期选择</legend>

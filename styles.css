@@ -333,6 +333,29 @@ h1 {
   min-height: 360px;
 }
 
+.chart-tooltip {
+  position: absolute;
+  z-index: 2;
+  width: 232px;
+  max-width: calc(100% - 16px);
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 4px 20px rgba(23, 32, 38, 0.16);
+  pointer-events: none;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltip-date { display: block; margin-bottom: 10px; font-size: 14px; }
+.chart-tooltip > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.chart-tooltip span { color: var(--muted); }
+.chart-tooltip > div strong { white-space: nowrap; }
+.tooltip-yield { color: var(--yield); }
+.tooltip-price { color: var(--price); }
+.selected-guide, .selected-point, .selected-price-point { pointer-events: none; }
+
 #yieldChart {
   display: block;
   width: 100%;
