@@ -2,8 +2,9 @@ import importlib.util
 import json
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
+from unittest.mock import patch
 
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "update-data.py"
@@ -289,6 +290,56 @@ class OfficialEnrichmentTests(unittest.TestCase):
 
 
 class PriceNormalizationTests(unittest.TestCase):
+    def test_fetch_prices_reads_more_than_one_thousand_source_rows(self):
+        start = update_data.ETF_LISTING_DATE
+        all_rows = [
+            {"trade_date": (start + timedelta(days=i)).isoformat(), "close": 20,
+             "source_id": source}
+            for i in range(362) for source in ("tencent_finance", "yahoo_finance", "tencent_finance_raw")
+        ]
+        calls = []
+
+        def fetch(url, *, params, headers):
+            calls.append(params)
+            return {"items": [r for r in all_rows if params["from"] <= r["trade_date"] <= params["to"]][:1000]}
+
+        with patch.object(update_data, "fetch_json", side_effect=fetch):
+            result = update_data.fetch_prices(until=start + timedelta(days=361))
+        self.assertEqual(len(result), 362)
+        self.assertEqual(result[0]["trade_date"], start.isoformat())
+        self.assertEqual(len(calls), 5)
+        self.assertTrue(all("source" not in call for call in calls))
+
+    def test_full_window_splits_without_dropping_sources(self):
+        rows = [
+            {"trade_date": day, "close": 20, "source_id": str(i)}
+            for day in ("2025-12-24", "2025-12-25") for i in range(600)
+        ]
+        def fetch(url, *, params, headers):
+            return {"items": [r for r in rows if params["from"] <= r["trade_date"] <= params["to"]][:1000]}
+        with patch.object(update_data, "fetch_json", side_effect=fetch):
+            result = update_data.fetch_price_window(date(2025, 12, 24), date(2025, 12, 25))
+        self.assertEqual(len(result), 1200)
+
+    def test_single_day_saturation_fails_closed(self):
+        with patch.object(update_data, "fetch_json", return_value={"items": [{}] * 1000}):
+            with self.assertRaisesRegex(RuntimeError, "single-day result reached limit"):
+                update_data.fetch_price_window(date(2025, 12, 24), date(2025, 12, 24))
+
+    def test_segmented_fetch_preserves_conflict_failure(self):
+        rows = [{"trade_date": "2025-04-07", "close": 20}, {"trade_date": "2025-04-07", "close": 21}]
+        with patch.object(update_data, "fetch_json", return_value={"items": rows}):
+            with self.assertRaisesRegex(RuntimeError, "Conflicting 03466 closes"):
+                update_data.fetch_prices(until=update_data.ETF_LISTING_DATE)
+
+    def test_out_of_window_and_empty_history_fail_closed(self):
+        with patch.object(update_data, "fetch_json", return_value={"items": [{"trade_date": "2024-01-01", "close": 20}]}):
+            with self.assertRaisesRegex(RuntimeError, "outside the requested window"):
+                update_data.fetch_prices(until=update_data.ETF_LISTING_DATE)
+        with patch.object(update_data, "fetch_json", return_value={"items": []}):
+            with self.assertRaisesRegex(RuntimeError, "no 03466 price rows"):
+                update_data.fetch_prices(until=update_data.ETF_LISTING_DATE)
+
     def test_deduplicate_prices_keeps_one_row_per_date_and_prefers_tencent(self):
         rows = [
             {

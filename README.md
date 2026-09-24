@@ -4,12 +4,13 @@ Static dashboard for 03466.HK daily annualized TTM dividend yield and official H
 
 ## Version
 
-- Version: `0.6.0`
-- Updated: `2026-08-05 15:10 CST`
+- Version: `0.6.1`
+- Updated: `2026-09-24 14:45 CST`
 
 ## Data
 
 - Close prices: Data_Server `/v1/hk-equity-quotes`, normalized to one verified close per trade date
+- Price history is fetched in bounded 90-calendar-day windows; saturated responses are split recursively, never silently truncated at 1,000 rows. Conflicting source closes still abort publication.
 - Distributions: Hang Seng Investment official `etffunddetail` API, strictly the listed HKD counter `Fund_code=3466`
 - HSHD30 constituents: Hang Seng Indexes official public `constituents.do` endpoint
 - 03466 constituent weights: Hang Seng Investment official `H0E329.xml` portfolio composition

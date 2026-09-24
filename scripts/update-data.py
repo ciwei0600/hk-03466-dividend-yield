@@ -12,7 +12,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -45,7 +45,7 @@ HKEX_QUOTE_API_URL = "https://www1.hkex.com.hk/hkexwidget/data/getequityquote"
 HKEX_QUOTE_PAGE_URL = (
     "https://www.hkex.com.hk/Market-Data/Securities-Prices/Equities/Equities-Quote"
 )
-USER_AGENT = "hk-03466-dividend-yield/0.6.0"
+USER_AGENT = "hk-03466-dividend-yield/0.6.1"
 
 
 def fetch_bytes(
@@ -128,18 +128,38 @@ def deduplicate_prices(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return deduplicated
 
 
-def fetch_prices() -> list[dict[str, Any]]:
+def fetch_price_window(start: date, end: date) -> list[dict[str, Any]]:
+    """Read every source, splitting saturated windows instead of truncating."""
     payload = fetch_json(
         f"{DATA_SERVER_API_BASE}/v1/hk-equity-quotes",
         params={
             "symbol": "03466",
-            "from": "2025-04-07",
-            "to": date.today().isoformat(),
+            "from": start.isoformat(),
+            "to": end.isoformat(),
             "limit": "1000",
         },
         headers={"X-Consumer-Id": DATA_SERVER_CONSUMER_ID},
     )
     rows = payload.get("items") or []
+    if len(rows) >= 1000:
+        if start == end:
+            raise RuntimeError(f"Data_Server 03466 single-day result reached limit: {start}")
+        middle = start + (end - start) // 2
+        return fetch_price_window(start, middle) + fetch_price_window(middle + timedelta(days=1), end)
+    for row in rows:
+        if not start <= parse_date(str(row.get("trade_date") or "")) <= end:
+            raise RuntimeError("Data_Server returned a 03466 date outside the requested window")
+    return rows
+
+
+def fetch_prices(until: date | None = None) -> list[dict[str, Any]]:
+    end = until or date.today()
+    start = ETF_LISTING_DATE
+    rows = []
+    while start <= end:
+        window_end = min(start + timedelta(days=89), end)
+        rows.extend(fetch_price_window(start, window_end))
+        start = window_end + timedelta(days=1)
     if not rows:
         raise RuntimeError("Data_Server returned no 03466 price rows")
     return deduplicate_prices(rows)
