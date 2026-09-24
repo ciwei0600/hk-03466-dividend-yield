@@ -24,6 +24,15 @@ CSI_URL = "https://oss-ch.csindex.com.cn/static/html/csindex/public/uploads/file
 CSI_WEIGHT_URL = "https://oss-ch.csindex.com.cn/static/html/csindex/public/uploads/file/autofile/closeweight/000922closeweight.xls"
 TENCENT_URL = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
 DAILY_NAME = "515080_ttm_dividend_yield_daily.csv"
+CALCULATION_METHOD = "frequency_adjusted_ttm_v1"
+# Effective from the first ex-date at each verified historical frequency.
+# CMF official distributions: annual in 2020, semiannual in 2021–2023,
+# quarterly from 2024 (including the Q2 2024 payment ex-dated July 1).
+DIVIDEND_FREQUENCIES = ((date(2020, 11, 30), 1), (date(2021, 6, 18), 2), (date(2024, 3, 28), 4))
+DAILY_FIELDS = ["trade_date", "close", "source_id", "actual_dividend_count",
+                "annual_dividend_frequency", "estimated_dividend_count", "dividend_as_of",
+                "ttm_dividend_cny", "ttm_dividend_yield_pct", "actual_365d_dividend_count",
+                "actual_365d_dividend_cny", "actual_365d_dividend_yield_pct"]
 
 
 def api(path, **params):
@@ -152,34 +161,68 @@ def fetch_dividends():
 
 
 def calculate(prices, dividends):
+    if not dividends:
+        raise RuntimeError("Missing 515080 distributions for TTM calculation")
+    dividends = sorted(dividends, key=lambda row: row["ex_date"])
     output = []
     first = dividends[0]["ex_date"]
     for price in prices:
         day = base.parse_date(price["trade_date"])
-        known = [r for r in dividends if day - timedelta(days=365) < r["ex_date"] <= day]
-        amount = round(sum(r["dividend_per_unit_cny"] for r in known), 10)
-        # After the first distribution an empty trailing window truthfully means 0.
-        dividend_yield = amount / price["close"] * 100 if day >= first else None
+        actual = [r for r in dividends if day - timedelta(days=365) < r["ex_date"] <= day]
+        actual_amount = round(sum(r["dividend_per_unit_cny"] for r in actual), 10) if day >= first else None
+        regimes = [(start, frequency) for start, frequency in DIVIDEND_FREQUENCIES if start <= day]
+        start, frequency = regimes[-1] if regimes else (LISTING_DATE, 0)
+        known = [r for r in dividends if start <= r["ex_date"] <= day][-frequency:] if frequency else []
+        estimated = frequency - len(known) if known else 0
+        # Equal-frequency periods prevent anniversary drift from counting 3 or 5 quarters.
+        # At a frequency transition do not mix semiannual and quarterly payment amounts.
+        amount = round(sum(r["dividend_per_unit_cny"] for r in known)
+                       + known[-1]["dividend_per_unit_cny"] * estimated, 10) if known else None
         output.append({**price, "actual_dividend_count": len(known),
-                       "ttm_dividend_cny": amount if day >= first else None,
-                       "ttm_dividend_yield_pct": dividend_yield})
+                       "annual_dividend_frequency": frequency,
+                       "estimated_dividend_count": estimated,
+                       "dividend_as_of": known[-1]["ex_date"].isoformat() if known else None,
+                       "ttm_dividend_cny": amount,
+                       "ttm_dividend_yield_pct": amount / price["close"] * 100 if amount is not None else None,
+                       "actual_365d_dividend_count": len(actual),
+                       "actual_365d_dividend_cny": actual_amount,
+                       "actual_365d_dividend_yield_pct": actual_amount / price["close"] * 100 if actual_amount is not None else None})
     return output
 
 
-def update_yield():
-    prices, temporary = fetch_prices()
+def update_yield(recalculate=False):
+    prior = {}
+    if recalculate:
+        # Reuse published raw closes for a formula-only release; still refresh official distributions.
+        prior = base.read_json(base.OUTPUT_DIR / "515080_summary.json", {})
+        prices = base.read_csv_rows(base.OUTPUT_DIR / DAILY_NAME)
+        if (not prices or not isinstance(prior.get("temporary_price_source"), bool)
+                or prices[-1]["trade_date"] != prior.get("latest", {}).get("trade_date")
+                or len(prices) != prior.get("price_rows")):
+            raise RuntimeError("Cannot recalculate without a matching published 515080 snapshot")
+        prices = normalize_prices([{k: r[k] for k in ("trade_date", "close", "source_id")} for r in prices])
+        if prices[0]["trade_date"] != LISTING_DATE.isoformat():
+            raise RuntimeError("Cannot recalculate truncated 515080 history")
+        temporary = prior["temporary_price_source"]
+    else:
+        prices, temporary = fetch_prices()
     dividends = fetch_dividends()
     daily = calculate(prices, dividends)
     latest = daily[-1]
     if latest["ttm_dividend_yield_pct"] is None:
         raise RuntimeError("515080 latest yield unavailable")
-    summary = {"symbol": SYMBOL, "currency": "CNY", "updated_at": datetime.now(base.timezone.utc).isoformat(),
+    now = datetime.now(base.timezone.utc).isoformat()
+    summary = {"symbol": SYMBOL, "currency": "CNY", "updated_at": now,
                "latest": latest, "price_rows": len(daily), "dividend_rows": len(dividends),
+               "price_snapshot_updated_at": prior.get("price_snapshot_updated_at", prior.get("updated_at")) if recalculate else now,
                "price_source": "Tencent raw daily quotes (temporary)" if temporary else "Data_Server raw CN quotes",
                "temporary_price_source": temporary, "data_request_id": REQUEST_ID,
                "dividend_source": "Data_Server /v1/cn-etf-distributions; CMF official announcements",
-               "calculation": "sum of actual cash distributions in (trade_date-365 days, trade_date] / raw close"}
-    base.write_csv(base.OUTPUT_DIR / DAILY_NAME, daily, ["trade_date", "close", "source_id", "actual_dividend_count", "ttm_dividend_cny", "ttm_dividend_yield_pct"])
+               "calculation_method": CALCULATION_METHOD,
+               "calculation": "latest N same-frequency ex-dividend payments plus latest payment * (N - count), divided by raw close; N=1/2/4 for verified annual/semiannual/quarterly stages",
+               "frequency_stages": [{"first_ex_date": start.isoformat(), "annual_frequency": frequency} for start, frequency in DIVIDEND_FREQUENCIES],
+               "actual_365d_calculation": "unadjusted cash sum in (trade_date-365 days, trade_date], retained separately for audit"}
+    base.write_csv(base.OUTPUT_DIR / DAILY_NAME, daily, DAILY_FIELDS)
     base.write_csv(base.OUTPUT_DIR / "515080_dividends_source_cmf.csv", dividends,
                    ["ex_date", "record_date", "payment_date", "dividend_per_unit_cny", "distribution_per_10_units", "currency", "source_url"])
     base.atomic_write_text(base.OUTPUT_DIR / "515080_summary.json", json.dumps(summary, ensure_ascii=False, indent=2) + "\n")
@@ -264,7 +307,9 @@ def update_constituents():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--constituents-only", action="store_true")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--constituents-only", action="store_true")
+    mode.add_argument("--recalculate", action="store_true", help="recalculate published raw closes with current official dividends")
     args = parser.parse_args()
     base.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    update_constituents() if args.constituents_only else update_yield()
+    update_constituents() if args.constituents_only else update_yield(recalculate=args.recalculate)

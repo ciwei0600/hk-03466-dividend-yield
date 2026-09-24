@@ -12,8 +12,9 @@ const FUNDS = {
     daily: "515080_ttm_dividend_yield_daily.csv", dividends: "515080_dividends_source_cmf.csv",
     summary: "515080_summary.json", constituents: "515080_csi_dividend_constituents.csv", constituentsSummary: "515080_constituents_summary.json",
     dividendField: "ttm_dividend_cny", yieldField: "ttm_dividend_yield_pct", count: 100,
-    index: "000922 · 中证红利", dividendLabel: "TTM 现金分红 / 份", yieldLabel: "TTM 股息率",
-    calculation: "515080：汇总当日及过去 365 天内已除息的实际现金分红，再除以当日未复权收盘价。公告的每 10 份金额先除以 10，换算成人民币／份。季度及更早的非固定频率分红均按实际金额计入，不补足到 12 次；首次除息前不绘制股息率。",
+    index: "000922 · 中证红利", dividendLabel: "折算 TTM 股息 / 份", yieldLabel: "折算 TTM 股息率",
+    calculationMethod: "frequency_adjusted_ttm_v1",
+    calculation: "515080：按分红频率折算年度股息，再除以当日未复权收盘价。自 2024-03-28 起取最近 4 次已除息的季度分红；2021-06-18 至 2024-03-27 取最近 2 次半年分红；更早取最近 1 次年度分红。同一频率阶段不足相应次数时，按最近一次同频分红补足估算，不混用半年与季度金额。每 10 份金额除以 10 换算成人民币／份；首次除息前留空。该折算 TTM 口径不按除息周年剔除旧分红；严格过去 365 天实际分红另保留在下载 CSV 的 actual_365d 字段中。",
   },
 };
 let activeFundId = "03466";
@@ -233,6 +234,13 @@ function updateReadout(row) {
   readout.querySelector('[data-field="close"]').textContent = formatCurrency(row.close);
   readout.querySelector('[data-field="annualized_dividend"]').textContent = formatCurrency(row.annualizedDividend);
   readout.querySelector('[data-field="dividend_yield_pct"]').textContent = formatPercent(row.yieldPct);
+  const basis = document.querySelector("#yieldBasisNote");
+  basis.hidden = activeFundId !== "515080";
+  if (!basis.hidden) {
+    const frequency = { 1: "年度", 2: "半年", 4: "季度" }[row.dividendFrequency];
+    const estimate = row.estimatedDividendCount ? `；另按最近一次金额补足 ${row.estimatedDividendCount} 次（估算）` : "；无补足估算";
+    basis.textContent = `选中日期折算依据：最近 ${row.dividendCount} 次${frequency}分红${estimate}。最近除息日 ${row.dividendAsOf}。`;
+  }
 }
 
 function updateLatestMetrics(row) {
@@ -252,6 +260,7 @@ async function fetchFirstAvailableCsv(fund) {
       if (!response.ok || !summaryResponse.ok) continue;
       const csv = await response.text();
       const summary = await summaryResponse.json();
+      if (fund.calculationMethod && summary.calculation_method !== fund.calculationMethod) continue;
       const records = parseCsv(csv);
       if (!records.length || records.at(-1).trade_date !== summary.latest.trade_date) continue;
       return { csv, source, summary };
@@ -662,6 +671,7 @@ async function switchFund(id) {
   viewStart = 0;
   viewEnd = -1;
   dateControls.disabled = true;
+  document.querySelector("#yieldBasisNote").hidden = true;
   document.querySelector("#dateRangeLabel").textContent = "正在加载…";
   document.querySelector("#selectedDateLabel").value = "—";
   document.querySelector("#dateOverview").textContent = "";
@@ -711,6 +721,8 @@ async function switchFund(id) {
     rows = parseCsv(csv).map((row) => ({
       tradeDate: row.trade_date, date: new Date(`${row.trade_date}T00:00:00+08:00`),
       close: toNumber(row.close), annualizedDividend: toNumber(row[fund.dividendField]), yieldPct: toNumber(row[fund.yieldField]),
+      dividendCount: toNumber(row.actual_dividend_count), dividendFrequency: toNumber(row.annual_dividend_frequency),
+      estimatedDividendCount: toNumber(row.estimated_dividend_count), dividendAsOf: row.dividend_as_of,
     })).filter((row) => row.close !== null && row.annualizedDividend !== null && row.yieldPct !== null);
     if (!rows.length) throw new Error("No valid dividend yield rows");
     dailyCsvLink.href = source.daily;

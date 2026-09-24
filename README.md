@@ -3,8 +3,8 @@
 双基金静态看板：**03466.HK 恒生高息股 30 ETF**、**515080.SH 招商中证红利 ETF**。
 支持基金切换、每日股息率与收盘价交互图、拖动日期与区间选择、实际持仓比例、指数成分变更、资料日期和 CSV 下载。
 
-- Version: `0.7.1`
-- Updated: `2026-09-24 16:30 CST`
+- Version: `0.7.2`
+- Updated: `2026-09-24 16:41 CST`
 - 正式域名保持： https://03466-dividend.cw-info.top/
 - 应用仍在 Quant VPS，沿用运行目录 `/opt/hk-03466-dividend-yield` 和 GitHub 仓库标识；页面及文档统一使用双基金名称。
 
@@ -13,7 +13,9 @@
 | 基金 | 行情 | 分红 | 股息率 |
 | --- | --- | --- | --- |
 | 03466.HK | Data_Server `/v1/hk-equity-quotes`，全部来源按交易日校验 | 恒生投资官网上市 HKD 类别 3466 | 最近最多 12 次月息，不足 12 次按最近月息补足／未复权收盘价 |
-| 515080.SH | 优先 Data_Server `/v1/cn-equity-quotes?market=SH&adjustment=raw`；缺口期间明确标注腾讯原始 `day` 日线临时来源 | Data_Server `/v1/cn-etf-distributions`，招商官网公告，元／10 份换算为元／份 | `(日期−365天, 日期]` 内实际现金分红之和／未复权收盘价，不按 12 次月息外推 |
+| 515080.SH | 优先 Data_Server `/v1/cn-equity-quotes?market=SH&adjustment=raw`；缺口期间明确标注腾讯原始 `day` 日线临时来源 | Data_Server `/v1/cn-etf-distributions`，招商官网公告，元／10 份换算为元／份 | 按历史1／2／4次频率取最近同频分红，不足次数按最新同频金额补足估算／未复权收盘价；当前为最近4次季度分红 |
+
+515080 展示“折算 TTM 股息率”，按已核验历史频率折算年度股息；与严格过去365天现金收入不同。跨频率时不混用年度、半年与季度金额，补足估算次数随选中日期显示；CSV 保留 `actual_365d_*` 原始现金统计便于核对。
 
 首次除息前不绘制股息率；不使用前复权价、净值或指数股息率替代 ETF 现金分红率。港元和人民币独立显示。
 行情必须读完整历史；任何同日收盘价冲突均停止该基金的更新，保留旧快照。两个基金独立执行，一方失败不阻止另一方。
@@ -47,7 +49,7 @@ Quant 使用北京时间；部署脚本安装两个独立任务：
 ```
 
 `update-all.py` 分别调用两只基金的更新器。可单独运行 `scripts/update-data.py`（03466）或 `scripts/update-cn-data.py`（515080）。
-页面先读取 `runtime-data/`，失败时使用 `assets/` 发布快照并明确提示。每个基金使用独立文件，不共用货币字段或持仓。
+页面先读取 `runtime-data/`，失败或515080计算方法版本不匹配时使用 `assets/` 发布快照并明确提示。每个基金使用独立文件，不共用货币字段或持仓。
 
 515080 报告持仓结果保存于 `assets/515080_disclosed_holdings.json`，包含报告链接、SHA-256、披露日、持仓日、明细与单位；新报告核验后通过 GitHub 更新该展示结果。日常指数同步不会把旧报告日期改为今天。
 
@@ -62,6 +64,8 @@ cd /opt/hk-03466-dividend-yield
 git pull --ff-only
 bash deploy/deploy-on-host.sh
 ```
+
+仅更新计算口径时，可运行 `.venv/bin/python scripts/update-cn-data.py --recalculate`，复用既有已核验未复权收盘价、刷新官方分红后重算515080；必须有日期及行数匹配的逐日CSV与summary，保留原行情快照时间。正常定时更新仍重新获取行情。
 
 部署脚本在项目 `.venv` 安装锁定依赖并配置原 nginx 站点；DNS、域名及证书位置不变。
 HTML、JS、CSS 强制重新验证，JS/CSS 带发布版本；`runtime-data/` 返回 `no-store`。

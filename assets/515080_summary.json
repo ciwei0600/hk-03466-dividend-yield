@@ -1,21 +1,43 @@
 {
   "symbol": "515080",
   "currency": "CNY",
-  "updated_at": "2026-09-24T08:00:58.510342+00:00",
+  "updated_at": "2026-09-24T08:40:34.977083+00:00",
   "latest": {
     "trade_date": "2026-09-23",
     "close": 1.543,
     "source_id": "tencent_finance_raw_temporary",
-    "source_url": "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get",
     "actual_dividend_count": 4,
+    "annual_dividend_frequency": 4,
+    "estimated_dividend_count": 0,
+    "dividend_as_of": "2026-09-16",
     "ttm_dividend_cny": 0.07,
-    "ttm_dividend_yield_pct": 4.536616979909269
+    "ttm_dividend_yield_pct": 4.536616979909269,
+    "actual_365d_dividend_count": 4,
+    "actual_365d_dividend_cny": 0.07,
+    "actual_365d_dividend_yield_pct": 4.536616979909269
   },
   "price_rows": 1635,
   "dividend_rows": 18,
+  "price_snapshot_updated_at": "2026-09-24T08:00:58.510342+00:00",
   "price_source": "Tencent raw daily quotes (temporary)",
   "temporary_price_source": true,
   "data_request_id": "522b0258-c618-4ba0-b6e2-4a411d0f5d35",
   "dividend_source": "Data_Server /v1/cn-etf-distributions; CMF official announcements",
-  "calculation": "sum of actual cash distributions in (trade_date-365 days, trade_date] / raw close"
+  "calculation_method": "frequency_adjusted_ttm_v1",
+  "calculation": "latest N same-frequency ex-dividend payments plus latest payment * (N - count), divided by raw close; N=1/2/4 for verified annual/semiannual/quarterly stages",
+  "frequency_stages": [
+    {
+      "first_ex_date": "2020-11-30",
+      "annual_frequency": 1
+    },
+    {
+      "first_ex_date": "2021-06-18",
+      "annual_frequency": 2
+    },
+    {
+      "first_ex_date": "2024-03-28",
+      "annual_frequency": 4
+    }
+  ],
+  "actual_365d_calculation": "unadjusted cash sum in (trade_date-365 days, trade_date], retained separately for audit"
 }
