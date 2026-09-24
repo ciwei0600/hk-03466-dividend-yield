@@ -40,6 +40,133 @@ const constituentChanges = document.querySelector("#constituentChanges");
 
 let rows = [];
 let selectedIndex = -1;
+let viewStart = 0;
+let viewEnd = -1;
+const dateControls = document.querySelector("#dateControls");
+const dateSlider = document.querySelector("#dateSlider");
+const dateNavigator = document.querySelector("#dateNavigator");
+const dateWindow = document.querySelector("#dateWindow");
+const dateStartHandle = document.querySelector("#dateStartHandle");
+const dateEndHandle = document.querySelector("#dateEndHandle");
+const previousDate = document.querySelector("#previousDate");
+const nextDate = document.querySelector("#nextDate");
+
+function presetStart(months) {
+  if (months === "all") return 0;
+  const [year, month, day] = rows.at(-1).tradeDate.split("-").map(Number);
+  const start = new Date(Date.UTC(year, month - 1 - Number(months), 1));
+  const lastDay = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0)).getUTCDate();
+  start.setUTCDate(Math.min(day, lastDay));
+  const cutoff = start.toISOString().slice(0, 10);
+  return Math.max(0, Math.min(rows.findIndex((row) => row.tradeDate >= cutoff), rows.length - 2));
+}
+
+function syncDateControls() {
+  if (!rows.length) return;
+  const last = rows.length - 1;
+  const left = (viewStart / (last || 1)) * 100;
+  const right = last ? (viewEnd / last) * 100 : 100;
+  document.querySelector("#dateRangeLabel").textContent = `${rows[viewStart].tradeDate} — ${rows[viewEnd].tradeDate}`;
+  dateWindow.style.left = `${left}%`;
+  dateWindow.style.width = `${right - left}%`;
+  dateWindow.setAttribute("aria-label", `移动日期区间：${rows[viewStart].tradeDate} 至 ${rows[viewEnd].tradeDate}，左右方向键移动`);
+  [[dateStartHandle, viewStart, 0, Math.max(0, viewEnd - 1), left],
+    [dateEndHandle, viewEnd, Math.min(last, viewStart + 1), last, right]].forEach(([handle, value, min, max, position]) => {
+    handle.style.left = `${position}%`;
+    handle.setAttribute("aria-valuemin", min);
+    handle.setAttribute("aria-valuemax", max);
+    handle.setAttribute("aria-valuenow", value);
+    handle.setAttribute("aria-valuetext", rows[value].tradeDate);
+    handle.disabled = last === 0;
+  });
+  dateWindow.disabled = viewEnd - viewStart === last;
+  dateSlider.min = viewStart;
+  dateSlider.max = viewEnd;
+  dateSlider.value = selectedIndex;
+  dateSlider.setAttribute("aria-valuetext", rows[selectedIndex].tradeDate);
+  document.querySelector("#selectedDateLabel").value = rows[selectedIndex].tradeDate;
+  previousDate.disabled = selectedIndex <= viewStart;
+  nextDate.disabled = selectedIndex >= viewEnd;
+  document.querySelectorAll("[data-months]").forEach((button) => {
+    button.setAttribute("aria-pressed", String(viewEnd === last && viewStart === presetStart(button.dataset.months)));
+  });
+}
+
+function setDateRange(start, end) {
+  if (!rows.length) return;
+  const last = rows.length - 1;
+  viewStart = Math.max(0, Math.min(Math.round(start), Math.max(0, last - 1)));
+  viewEnd = Math.max(Math.min(last, viewStart + 1), Math.min(last, Math.round(end)));
+  selectedIndex = Math.max(viewStart, Math.min(viewEnd, selectedIndex));
+  updateReadout(rows[selectedIndex]);
+  renderChart();
+}
+
+function selectDate(index) {
+  if (!rows.length) return;
+  selectedIndex = Math.max(viewStart, Math.min(viewEnd, index));
+  updateReadout(rows[selectedIndex]);
+  renderChart();
+}
+
+function initDateControls() {
+  viewStart = 0;
+  viewEnd = rows.length - 1;
+  dateControls.disabled = false;
+  document.querySelector("#dateFirst").textContent = rows[0].tradeDate;
+  document.querySelector("#dateLast").textContent = rows.at(-1).tradeDate;
+  const range = paddedRange(rows.map((row) => row.yieldPct));
+  const path = rows.map((row, index) => `${index ? "L" : "M"} ${index / (viewEnd || 1) * 1000} ${44 - (row.yieldPct - range.min) / (range.max - range.min) * 40}`).join(" ");
+  document.querySelector("#dateOverview").replaceChildren(makeSvgElement("path", { d: path }));
+  syncDateControls();
+}
+
+dateSlider.addEventListener("input", () => selectDate(Number(dateSlider.value)));
+previousDate.addEventListener("click", () => selectDate(selectedIndex - 1));
+nextDate.addEventListener("click", () => selectDate(selectedIndex + 1));
+document.querySelectorAll("[data-months]").forEach((button) => {
+  button.addEventListener("click", () => {
+    if (rows.length) setDateRange(presetStart(button.dataset.months), rows.length - 1);
+  });
+});
+
+// Pointer capture keeps mouse and touch dragging attached to the same control.
+[[dateStartHandle, "start"], [dateEndHandle, "end"], [dateWindow, "window"]].forEach(([element, kind]) => {
+  let drag = null;
+  element.addEventListener("pointerdown", (event) => {
+    if (!rows.length || element.disabled || dateControls.disabled || event.button !== 0) return;
+    event.preventDefault();
+    element.focus();
+    drag = { x: event.clientX, start: viewStart, end: viewEnd, token: loadToken, width: dateNavigator.clientWidth };
+    element.setPointerCapture(event.pointerId);
+  });
+  element.addEventListener("pointermove", (event) => {
+    if (!drag || drag.token !== loadToken || !rows.length) return;
+    const delta = Math.round((event.clientX - drag.x) / drag.width * (rows.length - 1));
+    if (kind === "start") setDateRange(Math.min(drag.end - 1, drag.start + delta), drag.end);
+    else if (kind === "end") setDateRange(drag.start, Math.max(drag.start + 1, drag.end + delta));
+    else {
+      const shift = Math.max(-drag.start, Math.min(rows.length - 1 - drag.end, delta));
+      setDateRange(drag.start + shift, drag.end + shift);
+    }
+  });
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach((name) => element.addEventListener(name, () => { drag = null; }));
+  element.addEventListener("keydown", (event) => {
+    if (!rows.length || element.disabled || dateControls.disabled) return;
+    const steps = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1, PageDown: -20, PageUp: 20 };
+    if (!(event.key in steps) && event.key !== "Home" && event.key !== "End") return;
+    event.preventDefault();
+    const last = rows.length - 1;
+    if (kind === "window") {
+      const shift = event.key === "Home" ? -viewStart : event.key === "End" ? last - viewEnd : Math.max(-viewStart, Math.min(last - viewEnd, steps[event.key]));
+      setDateRange(viewStart + shift, viewEnd + shift);
+    } else if (kind === "start") {
+      setDateRange(event.key === "Home" ? 0 : event.key === "End" ? viewEnd - 1 : Math.min(viewEnd - 1, viewStart + steps[event.key]), viewEnd);
+    } else {
+      setDateRange(viewStart, event.key === "Home" ? viewStart + 1 : event.key === "End" ? last : Math.max(viewStart + 1, viewEnd + steps[event.key]));
+    }
+  });
+});
 
 function parseCsv(text) {
   const records = [];
@@ -327,6 +454,8 @@ function paddedRange(values) {
 
 function renderChart() {
   if (!chart || !rows.length) return;
+  syncDateControls();
+  const visibleRows = rows.slice(viewStart, viewEnd + 1);
 
   const container = chart.parentElement;
   const width = Math.max(container.clientWidth, 320);
@@ -340,10 +469,10 @@ function renderChart() {
     : { top: 38, right: 76, bottom: 56, left: 64 };
   const plotWidth = width - margin.left - margin.right;
   const plotHeight = height - margin.top - margin.bottom;
-  const minTime = rows[0].date.getTime();
-  const maxTime = rows.at(-1).date.getTime();
-  const yieldValues = rows.map((row) => row.yieldPct);
-  const priceValues = rows.map((row) => row.close);
+  const minTime = visibleRows[0].date.getTime();
+  const maxTime = visibleRows.at(-1).date.getTime();
+  const yieldValues = visibleRows.map((row) => row.yieldPct);
+  const priceValues = visibleRows.map((row) => row.close);
   const yieldRange = paddedRange(yieldValues);
   const priceRange = paddedRange(priceValues);
   const minYield = Math.floor(yieldRange.min * 10) / 10;
@@ -353,8 +482,8 @@ function renderChart() {
   const xScale = (date) => margin.left + ((date.getTime() - minTime) / (maxTime - minTime || 1)) * plotWidth;
   const yieldScale = (value) => margin.top + ((maxYield - value) / (maxYield - minYield)) * plotHeight;
   const priceScale = (value) => margin.top + ((maxPrice - value) / (maxPrice - minPrice)) * plotHeight;
-  const yieldPoints = rows.map((row) => ({ x: xScale(row.date), y: yieldScale(row.yieldPct) }));
-  const pricePoints = rows.map((row) => ({ x: xScale(row.date), y: priceScale(row.close) }));
+  const yieldPoints = visibleRows.map((row) => ({ x: xScale(row.date), y: yieldScale(row.yieldPct) }));
+  const pricePoints = visibleRows.map((row) => ({ x: xScale(row.date), y: priceScale(row.close) }));
 
   chart.textContent = "";
   chart.setAttribute("viewBox", `0 0 ${width} ${height}`);
@@ -393,7 +522,8 @@ function renderChart() {
   }
 
   const seenMonths = new Set();
-  const monthTicks = rows.filter((row) => {
+  const shortRange = maxTime - minTime < 93 * 86400000;
+  const monthTicks = shortRange ? visibleRows : visibleRows.filter((row) => {
     const month = row.tradeDate.slice(0, 7);
     if (seenMonths.has(month)) return false;
     seenMonths.add(month);
@@ -414,7 +544,7 @@ function renderChart() {
       y: height - 18,
       "text-anchor": "middle",
     });
-    label.textContent = isPhone ? row.tradeDate.slice(2, 7) : row.tradeDate.slice(0, 7);
+    label.textContent = shortRange ? row.tradeDate.slice(5) : isPhone ? row.tradeDate.slice(2, 7) : row.tradeDate.slice(0, 7);
     axis.appendChild(label);
   });
 
@@ -469,9 +599,7 @@ function renderChart() {
   overlay.addEventListener("click", (event) => {
     const rect = chart.getBoundingClientRect();
     const svgX = ((event.clientX - rect.left) / rect.width) * width;
-    selectedIndex = getNearestIndex(svgX, yieldPoints);
-    updateReadout(rows[selectedIndex]);
-    renderChart();
+    selectDate(viewStart + getNearestIndex(svgX, yieldPoints));
   });
   chart.appendChild(overlay);
 
@@ -483,27 +611,23 @@ function renderChart() {
       r: isPhone ? 11 : 7,
       tabindex: 0,
       role: "button",
-      "aria-label": `${rows[index].tradeDate} ${formatPercent(rows[index].yieldPct)} ${formatCurrency(rows[index].close)}`,
+      "aria-label": `${visibleRows[index].tradeDate} ${formatPercent(visibleRows[index].yieldPct)} ${formatCurrency(visibleRows[index].close)}`,
     });
     hit.addEventListener("click", () => {
-      selectedIndex = index;
-      updateReadout(rows[selectedIndex]);
-      renderChart();
+      selectDate(viewStart + index);
     });
     hit.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        selectedIndex = index;
-        updateReadout(rows[selectedIndex]);
-        renderChart();
+        selectDate(viewStart + index);
       }
     });
     hitLayer.appendChild(hit);
   });
   chart.appendChild(hitLayer);
 
-  const selected = yieldPoints[selectedIndex];
-  const selectedPrice = pricePoints[selectedIndex];
+  const selected = yieldPoints[selectedIndex - viewStart];
+  const selectedPrice = pricePoints[selectedIndex - viewStart];
   chart.appendChild(makeSvgElement("line", {
     class: "selected-guide",
     x1: selected.x,
@@ -535,6 +659,14 @@ async function switchFund(id) {
   const fund = activeFund;
   rows = [];
   selectedIndex = -1;
+  viewStart = 0;
+  viewEnd = -1;
+  dateControls.disabled = true;
+  document.querySelector("#dateRangeLabel").textContent = "正在加载…";
+  document.querySelector("#selectedDateLabel").value = "—";
+  document.querySelector("#dateOverview").textContent = "";
+  document.querySelector("#dateFirst").textContent = "—";
+  document.querySelector("#dateLast").textContent = "—";
   chart.textContent = "";
   document.querySelectorAll("[data-latest-field], [data-field]").forEach((el) => { el.textContent = "—"; });
   document.querySelectorAll("[data-fund]").forEach((el) => el.setAttribute("aria-pressed", String(el.dataset.fund === id)));
@@ -585,6 +717,7 @@ async function switchFund(id) {
     dividendCsvLink.href = source.dividends;
     [dailyCsvLink, dividendCsvLink].forEach((el) => el.removeAttribute("aria-disabled"));
     selectedIndex = rows.length - 1;
+    initDateControls();
     updateLatestMetrics(rows[selectedIndex]);
     updateReadout(rows[selectedIndex]);
     renderChart();

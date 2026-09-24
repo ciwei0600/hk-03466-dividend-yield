@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>红利 ETF 股息率与成分股监控</title>
-    <link rel="stylesheet" href="./styles.css?v=0.7.0">
-    <script src="./app.js?v=0.7.0" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=0.7.1">
+    <script src="./app.js?v=0.7.1" defer></script>
   </head>
   <body>
     <main class="shell">
@@ -16,8 +16,8 @@
           <p class="subhead">恒生高息股 30 · 中证红利｜每日收盘价、现金分红与成分股。</p>
         </div>
         <div class="version">
-          <span>v0.7.0</span>
-          <span>2026-09-24 16:08 CST</span>
+          <span>v0.7.1</span>
+          <span>2026-09-24 16:30 CST</span>
         </div>
       </header>
 
@@ -51,6 +51,33 @@
         <div class="chart-wrap">
           <svg id="yieldChart" role="img" aria-label="基金每日股息率与收盘价交互折线图"></svg>
         </div>
+        <fieldset class="date-controls" id="dateControls" disabled>
+          <legend>日期选择</legend>
+          <div class="date-range-heading">
+            <strong id="dateRangeLabel">正在加载…</strong>
+            <div class="date-presets" aria-label="快捷日期区间">
+              <button type="button" data-months="1">近 1 月</button>
+              <button type="button" data-months="3">近 3 月</button>
+              <button type="button" data-months="12">近 1 年</button>
+              <button type="button" data-months="all">全部</button>
+            </div>
+          </div>
+          <p class="date-hint" id="dateRangeHint">拖动两端调整起止日期，拖动中间移动整个区间。</p>
+          <div class="date-navigator" id="dateNavigator">
+            <svg id="dateOverview" viewBox="0 0 1000 48" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <button type="button" class="date-window" id="dateWindow" aria-label="移动日期区间" aria-describedby="dateRangeHint"></button>
+            <button type="button" class="date-handle" id="dateStartHandle" role="slider" aria-label="起始日期" aria-orientation="horizontal" aria-describedby="dateRangeHint"></button>
+            <button type="button" class="date-handle" id="dateEndHandle" role="slider" aria-label="结束日期" aria-orientation="horizontal" aria-describedby="dateRangeHint"></button>
+          </div>
+          <div class="date-extent" aria-hidden="true"><span id="dateFirst">—</span><span id="dateLast">—</span></div>
+          <div class="date-scrubber">
+            <label for="dateSlider">移动选中日期</label>
+            <button type="button" id="previousDate" aria-label="上一个交易日">‹</button>
+            <input type="range" id="dateSlider" min="0" max="0" value="0" step="1" aria-describedby="selectedDateLabel">
+            <button type="button" id="nextDate" aria-label="下一个交易日">›</button>
+            <output id="selectedDateLabel" for="dateSlider">—</output>
+          </div>
+        </fieldset>
         <div class="point-readout" id="pointReadout" aria-live="polite">
           <div>
             <span class="label">选中日期</span>

@@ -429,6 +429,41 @@ h1 {
   stroke-width: 2;
 }
 
+.date-controls {
+  min-width: 0;
+  margin: 12px 0 0;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfa;
+}
+
+.date-controls legend { padding: 0 6px; font-size: 13px; color: var(--muted); }
+.date-range-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.date-range-heading strong { font-size: 14px; font-variant-numeric: tabular-nums; }
+.date-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.date-controls button { font: inherit; color: var(--ink); cursor: pointer; }
+.date-presets button, .date-scrubber button { min-height: 36px; border: 1px solid var(--line); border-radius: 5px; background: white; padding: 4px 10px; font-size: 13px; }
+.date-presets button[aria-pressed="true"] { color: white; border-color: var(--accent-strong); background: var(--accent-strong); }
+.date-controls :focus-visible { outline: 3px solid var(--warn); outline-offset: 3px; }
+.date-controls button:disabled, .date-controls:disabled { opacity: 0.5; cursor: default; }
+.date-hint { margin: 10px 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.date-navigator { position: relative; height: 48px; margin: 0 24px; background: #e9eeea; border-radius: 4px; }
+#dateOverview { display: block; width: 100%; height: 100%; pointer-events: none; }
+#dateOverview path { fill: none; stroke: var(--yield); stroke-width: 1.5; vector-effect: non-scaling-stroke; opacity: 0.55; }
+.date-window { position: absolute; top: 0; height: 100%; border: 1px solid var(--accent); border-radius: 3px; background: rgba(31, 111, 139, 0.13); touch-action: none; }
+.date-controls .date-window { cursor: grab; }
+.date-controls .date-window:active { cursor: grabbing; }
+.date-handle { position: absolute; top: 0; width: 24px; height: 48px; padding: 0; border: 2px solid var(--accent); border-radius: 5px; background: white; touch-action: none; }
+#dateStartHandle { transform: translateX(-100%); }
+.date-handle::after { content: ""; display: block; height: 18px; width: 4px; border-left: 1px solid var(--accent); border-right: 1px solid var(--accent); margin: auto; }
+.date-controls .date-handle { cursor: ew-resize; }
+.date-extent { display: flex; justify-content: space-between; margin: 7px 0 12px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.date-scrubber { display: grid; grid-template-columns: auto 36px minmax(40px, 1fr) 36px auto; align-items: center; gap: 10px; font-size: 13px; }
+.date-scrubber input { width: 100%; min-width: 0; margin: 0; height: 36px; accent-color: var(--accent-strong); cursor: pointer; }
+.date-scrubber button { font-size: 24px; line-height: 1; }
+.date-scrubber output { min-width: 80px; font-variant-numeric: tabular-nums; }
+
 .point-readout {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -581,6 +616,12 @@ code {
 }
 
 @media (max-width: 460px) {
+  .date-controls { padding: 10px; }
+  .date-scrubber { grid-template-columns: 32px minmax(40px, 1fr) 32px; gap: 8px; }
+  .date-scrubber label { grid-column: 1 / 3; grid-row: 1; }
+  .date-scrubber output { grid-column: 2 / 4; grid-row: 1; text-align: right; }
+  .date-scrubber button, .date-scrubber input { grid-row: 2; }
+
   h1 {
     font-size: 30px;
   }
