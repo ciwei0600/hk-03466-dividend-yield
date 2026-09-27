@@ -31,6 +31,8 @@ const chartTooltip = document.querySelector("#chartTooltip");
 let tooltipVisible = false;
 let tooltipSeries = "yield";
 let chartLayout = null;
+let hoverFrame = 0;
+let hoverPosition = null;
 const readout = document.querySelector("#pointReadout");
 const dailyCsvLink = document.querySelector("#dailyCsvLink");
 const dividendCsvLink = document.querySelector("#dividendCsvLink");
@@ -111,10 +113,14 @@ function selectDate(index) {
   if (!rows.length) return;
   selectedIndex = Math.max(viewStart, Math.min(viewEnd, index));
   updateReadout(rows[selectedIndex]);
-  renderChart();
+  syncDateControls();
+  renderSelection();
 }
 
 function hideChartTooltip() {
+  cancelAnimationFrame(hoverFrame);
+  hoverFrame = 0;
+  hoverPosition = null;
   tooltipVisible = false;
   chartTooltip.hidden = true;
 }
@@ -155,16 +161,35 @@ function positionChartTooltip() {
   chartTooltip.style.top = `${Math.max(8, Math.min(Math.max(minTop, top), maxTop))}px`;
 }
 
-// Resolve the date from the click position, even when adjacent point targets overlap.
-chart.addEventListener("click", (event) => {
+// Resolve the date from screen coordinates, even when point targets overlap.
+function showChartPoint(clientX, clientY, hideOutside = false) {
   if (!chartLayout || !rows.length) return;
-  const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(chart.getScreenCTM().inverse());
+  const point = new DOMPoint(clientX, clientY).matrixTransform(chart.getScreenCTM().inverse());
   const { margin, width, height, yieldPoints, pricePoints } = chartLayout;
-  if (point.x < margin.left || point.x > width - margin.right || point.y < margin.top || point.y > height - margin.bottom) return;
+  if (point.x < margin.left || point.x > width - margin.right || point.y < margin.top || point.y > height - margin.bottom) {
+    if (hideOutside) hideChartTooltip();
+    return;
+  }
   const index = getNearestIndex(point.x, yieldPoints);
   tooltipSeries = yieldPoints[index].y === null || Math.abs(point.y - pricePoints[index].y) < Math.abs(point.y - yieldPoints[index].y) ? "price" : "yield";
   tooltipVisible = true;
-  selectDate(viewStart + index);
+  if (selectedIndex !== viewStart + index) selectDate(viewStart + index);
+  else positionChartTooltip();
+}
+chart.addEventListener("click", (event) => showChartPoint(event.clientX, event.clientY));
+chart.addEventListener("pointermove", (event) => {
+  if (!["mouse", "pen"].includes(event.pointerType) || event.buttons) return;
+  hoverPosition = { x: event.clientX, y: event.clientY };
+  if (hoverFrame) return;
+  hoverFrame = requestAnimationFrame(() => {
+    hoverFrame = 0;
+    const position = hoverPosition;
+    hoverPosition = null;
+    if (position) showChartPoint(position.x, position.y, true);
+  });
+});
+chart.addEventListener("pointerleave", (event) => {
+  if (["mouse", "pen"].includes(event.pointerType)) hideChartTooltip();
 });
 document.addEventListener("pointerdown", (event) => {
   if (!chart.closest(".chart-panel").contains(event.target)) hideChartTooltip();
@@ -721,9 +746,16 @@ function renderChart() {
     hitLayer.appendChild(hit);
   });
   chart.appendChild(hitLayer);
+  renderSelection();
+}
 
+function renderSelection() {
+  if (!chartLayout || !rows[selectedIndex]) return;
+  const { yieldPoints, pricePoints, margin, height, width } = chartLayout;
+  const isPhone = width < 420;
   const selected = yieldPoints[selectedIndex - viewStart];
   const selectedPrice = pricePoints[selectedIndex - viewStart];
+  chart.querySelectorAll(".selected-guide, .selected-point, .selected-price-point").forEach((element) => element.remove());
   chart.appendChild(makeSvgElement("line", {
     class: "selected-guide",
     x1: selected.x,
