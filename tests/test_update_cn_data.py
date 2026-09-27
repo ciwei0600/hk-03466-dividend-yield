@@ -111,6 +111,28 @@ class DividendTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "complete history"):
             cn.calculate(self.official_prices()[1:], self.official_dividends())
 
+    def test_forward_prices_match_browser_evidence_without_changing_yield_denominator(self):
+        prices = self.official_prices()
+        rows = cn.calculate(prices, self.official_dividends())
+        self.assertEqual([r["qfq_close"] for r in rows[:3]], [0.606, 0.617, 0.625])
+        self.assertEqual([r["close"] for r in rows], [r["close"] for r in prices])
+        self.assertEqual(rows[0]["qfq_cash_adjustment_cny"], 0.435)
+        self.assertEqual(rows[-1]["qfq_close"], rows[-1]["close"])
+        self.assertEqual(rows[-1]["qfq_cash_adjustment_cny"], 0)
+        historical = next(r for r in rows if r["trade_date"] == "2024-02-29")
+        self.assertNotEqual(historical["qfq_close"], historical["close"])
+        self.assertAlmostEqual(historical["ttm_dividend_yield_pct"], historical["ttm_dividend_cny"] / historical["close"] * 100)
+
+    def test_new_ex_date_reanchors_history_without_adjusting_ex_date_or_estimates(self):
+        prices, dividends = self.official_prices(), self.official_dividends()
+        before = cn.calculate([r for r in prices if r["trade_date"] < "2026-09-16"], dividends)
+        after = cn.calculate([r for r in prices if r["trade_date"] <= "2026-09-16"], dividends)
+        self.assertEqual(before[0]["qfq_close"], 0.621)
+        self.assertEqual(after[0]["qfq_close"], 0.606)
+        self.assertEqual(after[-1]["qfq_cash_adjustment_cny"], 0)
+        full = cn.calculate(prices, dividends)
+        self.assertEqual([r["qfq_close"] for r in after], [r["qfq_close"] for r in full[:len(after)]])
+
     def test_recalculation_keeps_prices_and_original_price_timestamp(self):
         with tempfile.TemporaryDirectory() as folder, patch.object(cn.base, "OUTPUT_DIR", Path(folder)):
             prices = self.official_prices()

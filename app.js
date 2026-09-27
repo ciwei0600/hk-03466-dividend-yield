@@ -14,12 +14,29 @@ const FUNDS = {
     dividendField: "ttm_dividend_cny", yieldField: "ttm_dividend_yield_pct", count: 100,
     index: "000922 · 中证红利", dividendLabel: "摊分 TTM 股息 / 份", yieldLabel: "交易日摊分 TTM 股息率",
     calculationMethod: "trading_day_allocated_ttm_v1",
+    priceDisplayMethod: "cash_dividend_forward_v1",
     calculation: "515080：每次每份分红，平均摊到上次除息日之后至本次除息日（含当天）的实际交易日；首次从上市日开始，周末及休市日不摊分。TTM 股息率＝过去 12 个月内交易日摊分额合计 ÷ 当日未复权收盘价；上市不足一年留空。实线使用已确认的分红，虚线按上一期每交易日分红估算，待实际分红到齐后自动回填。历史回填值不代表当时已知分红，适合观察趋势，不是含价差的投资总收益率；真实价格变化仍会影响股息率。分摊明细和实际现金分红可下载 CSV 核对。",
   },
 };
 let activeFundId = "03466";
 let activeFund = FUNDS[activeFundId];
 let loadToken = 0;
+let priceMode = "qfq";
+function chartPrice(row) {
+  return activeFundId === "515080" && priceMode === "qfq" ? row.qfqClose : row.close;
+}
+function priceLabel() {
+  return activeFundId === "515080" ? `${priceMode === "qfq" ? "前复权" : "未复权"}收盘价` : "收盘价";
+}
+function syncPriceMode() {
+  document.querySelectorAll("[data-price-mode]").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.priceMode === priceMode));
+  });
+  document.querySelector("#selectedPriceLabel").textContent = priceLabel();
+  document.querySelector("#priceModeNote").textContent = priceMode === "qfq"
+    ? `前复权价：扣除其后已除息的实际分红，复权基准日 ${rows.at(-1)?.tradeDate || "—"}，历史价随新分红更新。TTM 始终使用未复权收盘价计算。`
+    : "未复权价：各交易日实际收盘价，也是 TTM 股息率的计算分母。";
+}
 function dataSources(fund) {
   return ["runtime-data", "assets"].map((directory) => Object.fromEntries(
     ["daily", "dividends", "summary", "constituents", "constituentsSummary"].map((key) => [key, `./${directory}/${fund[key]}`]),
@@ -138,10 +155,12 @@ function positionChartTooltip() {
   }
   const row = rows[selectedIndex];
   [["#tooltipDate", row.tradeDate], ["#tooltipYieldLabel", activeFund.yieldLabel],
-    ["#tooltipYield", formatPercent(row.yieldPct)], ["#tooltipPrice", formatCurrency(row.close)]].forEach(([selector, value]) => {
+    ["#tooltipYield", formatPercent(row.yieldPct)], ["#tooltipPrice", formatCurrency(chartPrice(row))],
+    ["#tooltipPriceLabel", priceLabel()], ["#tooltipRawPrice", formatCurrency(row.close)]].forEach(([selector, value]) => {
     const element = document.querySelector(selector);
     if (element.textContent !== value) element.textContent = value;
   });
+  document.querySelector("#tooltipRawRow").hidden = activeFundId !== "515080" || priceMode !== "qfq";
   const basis = document.querySelector("#tooltipBasis");
   basis.hidden = activeFundId !== "515080";
   basis.textContent = row.yieldPct === null ? "上市不足一年，TTM 留空" : row.estimatedTradingDays ? `含 ${row.estimatedTradingDays} 个交易日估算` : "已完成区间 · 历史回填";
@@ -328,7 +347,7 @@ function makeSvgElement(tag, attrs = {}) {
 function updateReadout(row) {
   if (!row) return;
   readout.querySelector('[data-field="trade_date"]').textContent = row.tradeDate;
-  readout.querySelector('[data-field="close"]').textContent = formatCurrency(row.close);
+  readout.querySelector('[data-field="close"]').textContent = formatCurrency(chartPrice(row));
   readout.querySelector('[data-field="annualized_dividend"]').textContent = formatDividend(row.annualizedDividend);
   readout.querySelector('[data-field="dividend_yield_pct"]').textContent = formatPercent(row.yieldPct);
   const basis = document.querySelector("#yieldBasisNote");
@@ -336,7 +355,7 @@ function updateReadout(row) {
   if (!basis.hidden) {
     const window = row.yieldPct === null ? "上市不足一年，TTM 暂不计算。" : `过去 12 个月 ${row.ttmTradingDays} 个交易日摊分额合计；${row.estimatedTradingDays ? `其中 ${row.estimatedTradingDays} 日为估算` : "全部来自已完成分红区间"}。`;
     const period = row.allocationStatus === "estimated" ? `最新区间尚未完成，沿用截至 ${row.allocationSourceExDate} 的上一期日均分红估算。` : `分红区间 ${row.allocationPeriodStart} 至 ${row.allocationPeriodEnd}，共 ${row.allocationTradingDays} 个交易日（历史回填）。`;
-    basis.textContent = `${window}当日摊分 ${row.dailyDividend.toFixed(8)} CNY／份。${period}`;
+    basis.textContent = `${window}TTM 分母（未复权）：${formatCurrency(row.close)}。当日摊分 ${row.dailyDividend.toFixed(8)} CNY／份。${period}`;
   }
 }
 
@@ -359,8 +378,14 @@ async function fetchFirstAvailableCsv(fund) {
       const csv = await response.text();
       const summary = await summaryResponse.json();
       if (fund.calculationMethod && summary.calculation_method !== fund.calculationMethod) continue;
+      if (fund.priceDisplayMethod && summary.price_display_method !== fund.priceDisplayMethod) continue;
       const records = parseCsv(csv);
       if (!records.length || records.at(-1).trade_date !== summary.latest.trade_date) continue;
+      if (fund.priceDisplayMethod && (summary.qfq_anchor_date !== records.at(-1).trade_date
+          || records.some((row) => !(toNumber(row.qfq_close) > 0)
+            || toNumber(row.qfq_cash_adjustment_cny) === null
+            || toNumber(row.qfq_cash_adjustment_cny) < 0
+            || Math.abs(toNumber(row.close) - toNumber(row.qfq_cash_adjustment_cny) - toNumber(row.qfq_close)) > 1e-8))) continue;
       return { csv, source, summary };
     } catch (error) {
       console.warn(`failed to load ${source.daily}`, error);
@@ -591,7 +616,7 @@ function renderChart() {
   const minTime = visibleRows[0].date.getTime();
   const maxTime = visibleRows.at(-1).date.getTime();
   const yieldValues = visibleRows.map((row) => row.yieldPct);
-  const priceValues = visibleRows.map((row) => row.close);
+  const priceValues = visibleRows.map(chartPrice);
   const yieldRange = paddedRange(yieldValues);
   const priceRange = paddedRange(priceValues);
   const minYield = Math.floor(yieldRange.min * 10) / 10;
@@ -602,7 +627,7 @@ function renderChart() {
   const yieldScale = (value) => margin.top + ((maxYield - value) / (maxYield - minYield)) * plotHeight;
   const priceScale = (value) => margin.top + ((maxPrice - value) / (maxPrice - minPrice)) * plotHeight;
   const yieldPoints = visibleRows.map((row) => ({ x: xScale(row.date), y: row.yieldPct === null ? null : yieldScale(row.yieldPct) }));
-  const pricePoints = visibleRows.map((row) => ({ x: xScale(row.date), y: priceScale(row.close) }));
+  const pricePoints = visibleRows.map((row) => ({ x: xScale(row.date), y: priceScale(chartPrice(row)) }));
   chartLayout = { margin, width, height, yieldPoints, pricePoints };
 
   chart.textContent = "";
@@ -690,7 +715,7 @@ function renderChart() {
     y2: legendY,
   }));
   const priceLegend = makeSvgElement("text", { x: priceLegendX + 28, y: legendY + 4 });
-  priceLegend.textContent = `收盘价 (${activeFund.currency})`;
+  priceLegend.textContent = `${isPhone && activeFundId === "515080" ? priceLabel().replace("收盘价", "") : priceLabel()} (${activeFund.currency})`;
   legend.appendChild(priceLegend);
   chart.appendChild(legend);
 
@@ -732,7 +757,7 @@ function renderChart() {
       r: isPhone ? 11 : 7,
       tabindex: 0,
       role: "button",
-      "aria-label": `${visibleRows[index].tradeDate} ${formatPercent(visibleRows[index].yieldPct)} ${formatCurrency(visibleRows[index].close)}`,
+      "aria-label": `${visibleRows[index].tradeDate} ${formatPercent(visibleRows[index].yieldPct)} ${priceLabel()} ${formatCurrency(chartPrice(visibleRows[index]))}`,
     });
     hit.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
@@ -785,6 +810,10 @@ async function switchFund(id) {
   const token = ++loadToken;
   activeFundId = id;
   activeFund = FUNDS[id];
+  priceMode = "qfq";
+  document.querySelector("#priceControls").hidden = id !== "515080";
+  document.querySelector("#priceModeControls").disabled = true;
+  document.querySelector('[data-latest-field="close"]').previousElementSibling.textContent = id === "515080" ? "最新收盘价（未复权）" : "收盘价";
   const fund = activeFund;
   hideChartTooltip();
   chartLayout = null;
@@ -843,13 +872,15 @@ async function switchFund(id) {
     if (token !== loadToken) return;
     rows = parseCsv(csv).map((row) => ({
       tradeDate: row.trade_date, date: new Date(`${row.trade_date}T00:00:00+08:00`),
-      close: toNumber(row.close), annualizedDividend: toNumber(row[fund.dividendField]), yieldPct: toNumber(row[fund.yieldField]),
+      close: toNumber(row.close), qfqClose: toNumber(row.qfq_close), annualizedDividend: toNumber(row[fund.dividendField]), yieldPct: toNumber(row[fund.yieldField]),
       dailyDividend: toNumber(row.daily_dividend_cny), ttmTradingDays: toNumber(row.ttm_trading_days),
       estimatedTradingDays: toNumber(row.ttm_estimated_trading_days), allocationStatus: row.allocation_status,
       allocationPeriodStart: row.allocation_period_start, allocationPeriodEnd: row.allocation_period_end,
       allocationTradingDays: toNumber(row.allocation_trading_days), allocationSourceExDate: row.allocation_source_ex_date,
     })).filter((row) => row.close !== null);
     if (!rows.length) throw new Error("No valid dividend yield rows");
+    syncPriceMode();
+    document.querySelector("#priceModeControls").disabled = false;
     dailyCsvLink.href = source.daily;
     dividendCsvLink.href = source.dividends;
     [dailyCsvLink, dividendCsvLink].forEach((el) => el.removeAttribute("aria-disabled"));
@@ -873,6 +904,16 @@ async function switchFund(id) {
 
 document.querySelectorAll("[data-fund]").forEach((button) => {
   button.addEventListener("click", () => switchFund(button.dataset.fund));
+});
+document.querySelectorAll("[data-price-mode]").forEach((button) => {
+  button.addEventListener("click", () => {
+    if (activeFundId !== "515080" || !rows.length) return;
+    priceMode = button.dataset.priceMode;
+    hideChartTooltip();
+    syncPriceMode();
+    updateReadout(rows[selectedIndex]);
+    renderChart();
+  });
 });
 window.addEventListener("resize", renderChart);
 const requestedFund = new URLSearchParams(window.location.search).get("fund");

@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>红利 ETF 股息率与成分股监控</title>
-    <link rel="stylesheet" href="./styles.css?v=0.8.1">
-    <script src="./app.js?v=0.8.1" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=0.9.0">
+    <script src="./app.js?v=0.9.0" defer></script>
   </head>
   <body>
     <main class="shell">
@@ -16,8 +16,8 @@
           <p class="subhead">恒生高息股 30 · 中证红利｜每日收盘价、现金分红与成分股。</p>
         </div>
         <div class="version">
-          <span>v0.8.1</span>
-          <span>2026-09-27 10:41 CST</span>
+          <span>v0.9.0</span>
+          <span>2026-09-27 14:27 CST</span>
         </div>
       </header>
 
@@ -48,12 +48,21 @@
       </section>
 
       <section class="chart-panel" aria-label="折线图">
+        <div id="priceControls" class="price-controls" hidden>
+          <fieldset id="priceModeControls" disabled>
+            <legend>价格口径</legend>
+            <button type="button" data-price-mode="qfq" aria-pressed="true">前复权</button>
+            <button type="button" data-price-mode="raw" aria-pressed="false">未复权</button>
+          </fieldset>
+          <p id="priceModeNote" class="source-note"></p>
+        </div>
         <div class="chart-wrap">
           <svg id="yieldChart" role="img" aria-label="基金每日股息率与收盘价交互折线图"></svg>
           <div id="chartTooltip" class="chart-tooltip" role="status" aria-live="polite" aria-atomic="true" hidden>
             <strong id="tooltipDate" class="tooltip-date"></strong>
             <div><span id="tooltipYieldLabel">股息率</span><strong id="tooltipYield" class="tooltip-yield"></strong></div>
-            <div><span>收盘价</span><strong id="tooltipPrice" class="tooltip-price"></strong></div>
+            <div><span id="tooltipPriceLabel">收盘价</span><strong id="tooltipPrice" class="tooltip-price"></strong></div>
+            <div id="tooltipRawRow" hidden><span>TTM分母（未复权）</span><strong id="tooltipRawPrice"></strong></div>
             <small id="tooltipBasis" hidden></small>
           </div>
         </div>
@@ -91,7 +100,7 @@
             <strong data-field="trade_date">-</strong>
           </div>
           <div>
-            <span class="label">收盘价</span>
+            <span class="label" id="selectedPriceLabel">收盘价</span>
             <strong data-field="close">-</strong>
           </div>
           <div>

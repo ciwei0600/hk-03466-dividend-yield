@@ -1,0 +1,69 @@
+{
+  "source": "Tencent qfqday live comparison",
+  "anchor_date": "2026-09-24",
+  "compared_rows": 1636,
+  "mismatches": 0,
+  "sample_rows": [
+    {
+      "trade_date": "2019-12-27",
+      "qfq_close": "0.606",
+      "raw_close": "1.041",
+      "subsequent_cash_dividend": "0.435"
+    },
+    {
+      "trade_date": "2019-12-30",
+      "qfq_close": "0.617",
+      "raw_close": "1.052",
+      "subsequent_cash_dividend": "0.435"
+    },
+    {
+      "trade_date": "2019-12-31",
+      "qfq_close": "0.625",
+      "raw_close": "1.06",
+      "subsequent_cash_dividend": "0.435"
+    },
+    {
+      "trade_date": "2026-09-24",
+      "qfq_close": "1.541",
+      "raw_close": "1.541",
+      "subsequent_cash_dividend": "0"
+    }
+  ],
+  "request": {
+    "request_id": "0189023c-9f00-400a-8d97-4a765d640705",
+    "consumer_id": "cash-ranking",
+    "title": "515080 前复权历史未按2026-09-16分红刷新",
+    "description": "消费者 hk-03466-dividend-yield / cash-ranking；2026-09-27实测 GET /v1/cn-equity-quotes?symbol=515080&market=SH&adjustment=qfq&from=2019-12-27&to=2019-12-31&limit=1000 返回0.621/0.632/0.640，source_updated_at=2026-08-06，factor_anchor_date=null。当前同花顺浏览器 forward 月K 2019-12-31=0.625，腾讯qfqday三日=0.606/0.617/0.625；差0.015恰为2026-09-16每份分红。请刷新2019-12-27至最新交易日的完整前复权历史，提供锚定日期及公司行动依据；保持raw独立不变。现有raw缺口单522b0258-c618-4ba0-b6e2-4a411d0f5d35不覆盖本次qfq锚定失效。本项目暂不采用过期qfq，基于已核验raw与官网实际现金分红推导展示结果，并对照当前腾讯/同花顺。",
+    "dataset_purpose": "515080价格图默认前复权，可切换未复权；TTM分母仍raw",
+    "proposed_dataset_id": "cn_equity_quotes",
+    "proposed_schema": "symbol,market,currency,trade_date,close,adjustment=qfq,source_id,source_updated_at,factor_anchor_date,factor_action_ids;完整历史随除息刷新，raw保持独立",
+    "urgency": "high",
+    "expected_freshness_seconds": 86400,
+    "status": "submitted",
+    "engine_notes": null,
+    "linked_dataset_id": null,
+    "linked_collector_id": null,
+    "created_at": "2026-09-27T06:23:00.652736Z",
+    "updated_at": "2026-09-27T06:23:00.652736Z",
+    "reviewed_at": null,
+    "done_at": null,
+    "completion_percent": 10,
+    "completion_state": "review_pending",
+    "completion_summary": "待审核，尚未进入执行",
+    "completion_evidence": [
+      "工单状态=submitted"
+    ],
+    "completion_updated_at": "2026-09-27T06:23:00.652736Z",
+    "codex_latest_at": null,
+    "codex_latest_status": null,
+    "codex_latest_decision": null,
+    "codex_latest_summary": null,
+    "codex_human_followup": null,
+    "codex_engine_notes": null,
+    "codex_changed_files": [],
+    "codex_commands_run": [],
+    "codex_verification": [],
+    "codex_request_closed": null,
+    "codex_thread_id": null
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "checked_at": "2026-09-27T14:17:48.229200+08:00",
+  "app_version": "v0.8.1",
+  "app_commit": "cd00591",
+  "site_url": "https://03466-dividend.cw-info.top/?fund=515080",
+  "comparison_url": "https://stockpage.10jqka.com.cn/515080/",
+  "latest_close_both": 1.541,
+  "total_distributions_per_unit_cny": "0.435",
+  "price_comparison": [
+    {
+      "trade_date": "2019-12-27",
+      "raw_close": "1.041",
+      "tencent_qfq": "0.606"
+    },
+    {
+      "trade_date": "2019-12-30",
+      "raw_close": "1.052",
+      "tencent_qfq": "0.617"
+    },
+    {
+      "trade_date": "2019-12-31",
+      "raw_close": "1.060",
+      "tencent_qfq": "0.625",
+      "ths_monthly_qfq_close": "0.625"
+    }
+  ],
+  "ths_browser_monthly_request": {
+    "code_list": [
+      {
+        "codes": [
+          "515080"
+        ],
+        "market": "20"
+      }
+    ],
+    "trade_class": "intraday",
+    "time_period": "month_1",
+    "trade_date": -1,
+    "begin_time": -400,
+    "end_time": 0,
+    "adjust_type": "forward",
+    "gpid": 1
+  },
+  "ths_browser_monthly_response": {
+    "rows": 82,
+    "2019-12-31_close": 0.625,
+    "2026-09-24_close": 1.541,
+    "note": "Values recorded from completed browser request 54321.134 before page reload"
+  }
+}

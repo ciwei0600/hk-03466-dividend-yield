@@ -128,6 +128,13 @@ h1 {
   margin-bottom: 22px;
 }
 
+.price-controls { margin-bottom: 14px; }
+.price-controls fieldset { display: flex; gap: 8px; border: 0; padding: 0; margin: 0 0 8px; }
+.price-controls legend { float: left; padding: 8px 12px 8px 0; font-size: 14px; }
+.price-controls button { border: 1px solid var(--line); border-radius: 6px; padding: 8px 14px; font: inherit; font-size: 14px; background: white; color: var(--ink); cursor: pointer; }
+.price-controls button[aria-pressed="true"] { background: var(--accent-strong); color: white; border-color: var(--accent-strong); }
+.price-controls button:focus-visible { outline: 3px solid var(--warn); outline-offset: 2px; }
+
 .constituents-panel {
   border: 1px solid var(--line);
   border-radius: 8px;

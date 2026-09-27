@@ -26,7 +26,8 @@ CSI_WEIGHT_URL = "https://oss-ch.csindex.com.cn/static/html/csindex/public/uploa
 TENCENT_URL = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
 DAILY_NAME = "515080_ttm_dividend_yield_daily.csv"
 CALCULATION_METHOD = "trading_day_allocated_ttm_v1"
-DAILY_FIELDS = ["trade_date", "close", "source_id", "daily_dividend_cny",
+PRICE_DISPLAY_METHOD = "cash_dividend_forward_v1"
+DAILY_FIELDS = ["trade_date", "close", "source_id", "qfq_close", "qfq_cash_adjustment_cny", "daily_dividend_cny",
                 "allocation_status", "allocation_period_start", "allocation_period_end",
                 "allocation_trading_days", "allocation_source_ex_date",
                 "ttm_window_start_exclusive", "ttm_trading_days", "ttm_history_complete",
@@ -216,7 +217,14 @@ def calculate(prices, dividends):
         amount = round(math.fsum(r["daily_dividend_cny"] for r in window), 12) if complete else None
         actual = [r for r in dividends if day - timedelta(days=365) < r["ex_date"] <= day]
         actual_amount = round(math.fsum(r["dividend_per_unit_cny"] for r in actual), 10) if day >= first else None
+        # Cash-distribution ETF: adjust only the display price to the snapshot's
+        # share basis. Actual/estimated TTM allocations never enter this price.
+        cash_adjustment = round(math.fsum(r["dividend_per_unit_cny"] for r in dividends if day < r["ex_date"]), 10)
+        qfq_close = round(price["close"] - cash_adjustment, 10)
+        if qfq_close <= 0:
+            raise RuntimeError("Invalid cash-dividend forward price; review corporate actions")
         output.append({**price, **allocation,
+                       "qfq_close": qfq_close, "qfq_cash_adjustment_cny": cash_adjustment,
                        "ttm_window_start_exclusive": cutoff.isoformat(),
                        "ttm_trading_days": len(window), "ttm_history_complete": complete,
                        "ttm_estimated_trading_days": len(estimated),
@@ -257,6 +265,11 @@ def update_yield(recalculate=False):
                "price_source": "Tencent raw daily quotes (temporary)" if temporary else "Data_Server raw CN quotes",
                "temporary_price_source": temporary, "data_request_id": REQUEST_ID,
                "dividend_source": "Data_Server /v1/cn-etf-distributions; CMF official announcements",
+               "price_display_method": PRICE_DISPLAY_METHOD,
+               "qfq_anchor_date": prices[-1]["trade_date"],
+               "qfq_calculation": "display only: raw close minus actual cash distributions with trade_date < ex_date <= snapshot date; no estimated dividends; raw close remains the yield denominator",
+               "qfq_source": "derived from verified raw closes and CMF official cash distributions; not stale Data_Server qfq quotes",
+               "qfq_data_request_id": "0189023c-9f00-400a-8d97-4a765d640705",
                "calculation_method": CALCULATION_METHOD,
                "calculation": "allocate each completed dividend equally over quoted trading days in (previous ex-date, ex-date], first interval starts on listing date; sum allocations in (trade_date minus 12 months, trade_date], then divide by raw close",
                "history_policy": "retrospective allocation; completed intervals backfill history, not point-in-time cash returns; TTM blank before one full year of listing history",
