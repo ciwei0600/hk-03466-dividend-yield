@@ -352,6 +352,7 @@ h1 {
 .chart-tooltip > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
 .chart-tooltip span { color: var(--muted); }
 .chart-tooltip > div strong { white-space: nowrap; }
+.chart-tooltip small:not([hidden]) { display: block; margin-top: 8px; color: var(--muted); }
 .tooltip-yield { color: var(--yield); }
 .tooltip-price { color: var(--price); }
 .selected-guide, .selected-point, .selected-price-point { pointer-events: none; }

@@ -22,72 +22,110 @@ class DividendTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "Duplicate"):
                 cn.fetch_dividends()
 
-    def test_ttm_uses_last_four_ex_dates_and_excludes_future_dividends(self):
-        dividends = [{"ex_date": date.fromisoformat(d), "dividend_per_unit_cny": v} for d, v in
-                     [("2025-09-23", 0.5), ("2025-12-18", 0.02), ("2026-03-18", 0.015),
-                      ("2026-06-18", 0.02), ("2026-09-16", 0.015), ("2026-12-18", 0.6)]]
-        rows = cn.calculate([{"trade_date": "2026-09-23", "close": 1.543}], dividends)
-        self.assertEqual(rows[0]["actual_dividend_count"], 4)
-        self.assertEqual(rows[0]["ttm_dividend_cny"], 0.07)
-        self.assertAlmostEqual(rows[0]["ttm_dividend_yield_pct"], 0.07 / 1.543 * 100)
-
-    def test_first_annual_distribution_and_pre_distribution_blank(self):
-        dividends = [{"ex_date": date(2020, 11, 30), "dividend_per_unit_cny": 0.06}]
-        rows = cn.calculate([{"trade_date": d, "close": 1} for d in ["2020-11-27", "2020-11-30", "2021-06-17"]], dividends)
-        self.assertIsNone(rows[0]["ttm_dividend_yield_pct"])
-        self.assertEqual(rows[1]["ttm_dividend_yield_pct"], 6)
-        self.assertEqual(rows[2]["ttm_dividend_yield_pct"], 6)
-        self.assertEqual(rows[1]["annual_dividend_frequency"], 1)
-
     def official_dividends(self):
         return [{"ex_date": date.fromisoformat(r["ex_date"]),
                  "dividend_per_unit_cny": float(r["dividend_per_unit_cny"])}
                 for r in cn.base.read_csv_rows(cn.base.ASSETS_DIR / "515080_dividends_source_cmf.csv")]
 
-    def test_anniversary_drift_never_creates_three_or_five_quarters(self):
-        days = ["2026-06-16", "2026-06-17", "2026-06-18", "2026-09-16", "2026-09-17"]
-        rows = cn.calculate([{"trade_date": d, "close": 1.5} for d in days], self.official_dividends())
-        self.assertEqual([r["ttm_dividend_cny"] for r in rows], [0.065, 0.065, 0.07, 0.07, 0.07])
-        self.assertEqual([r["actual_dividend_count"] for r in rows], [4] * 5)
-        self.assertEqual([r["actual_365d_dividend_count"] for r in rows], [4, 3, 4, 5, 4])
-        self.assertEqual(rows[3]["actual_365d_dividend_cny"], 0.085)
+    def official_prices(self):
+        return [{"trade_date": r["trade_date"], "close": float(r["close"]), "source_id": r["source_id"]}
+                for r in cn.base.read_csv_rows(cn.base.ASSETS_DIR / cn.DAILY_NAME)]
 
-    def test_semiannual_stage_excludes_earlier_full_year_payment(self):
-        rows = cn.calculate([{"trade_date": d, "close": 1} for d in
-                             ["2021-06-18", "2021-12-09", "2022-06-20"]], self.official_dividends())
-        self.assertEqual([r["ttm_dividend_cny"] for r in rows], [0.06] * 3)
-        self.assertEqual([r["estimated_dividend_count"] for r in rows], [1, 0, 0])
-        self.assertEqual([r["annual_dividend_frequency"] for r in rows], [2] * 3)
+    def test_allocation_uses_only_trading_rows_and_excludes_previous_ex_date(self):
+        days = ["2019-12-27", "2019-12-30", "2019-12-31", "2020-01-02",
+                "2020-01-03", "2020-01-06", "2020-01-07", "2020-01-08"]
+        prices = [{"trade_date": d, "close": 1} for d in days]
+        dividends = [{"ex_date": date(2019, 12, 31), "dividend_per_unit_cny": 0.06},
+                     {"ex_date": date(2020, 1, 7), "dividend_per_unit_cny": 0.12}]
+        rows = cn.calculate(prices, dividends)
+        self.assertEqual([r["daily_dividend_cny"] for r in rows], [0.02] * 3 + [0.03] * 5)
+        self.assertEqual([r["allocation_trading_days"] for r in rows], [3] * 3 + [4] * 4 + [None])
+        self.assertEqual(rows[3]["allocation_period_start"], "2020-01-02")
+        self.assertEqual(rows[-1]["allocation_status"], "estimated")
+        self.assertTrue(all(r["ttm_dividend_cny"] is None for r in rows))
+        self.assertEqual(len(rows), len(days))
 
-    def test_quarterly_transition_excludes_semiannual_and_labels_estimates(self):
-        rows = cn.calculate([{"trade_date": d, "close": 1} for d in
-                             ["2024-03-28", "2024-07-01", "2024-09-20", "2024-12-02"]], self.official_dividends())
-        self.assertEqual([r["ttm_dividend_cny"] for r in rows], [0.06, 0.075, 0.065, 0.07])
-        self.assertEqual([r["estimated_dividend_count"] for r in rows], [3, 2, 1, 0])
-        self.assertEqual([r["actual_dividend_count"] for r in rows], [1, 2, 3, 4])
-        self.assertEqual([r["annual_dividend_frequency"] for r in rows], [4] * 4)
+    def test_every_official_payment_is_conserved_without_overlap(self):
+        rows = cn.calculate(self.official_prices(), self.official_dividends())
+        for dividend in self.official_dividends():
+            interval = [r for r in rows if r["allocation_status"] == "historical"
+                        and r["allocation_source_ex_date"] == dividend["ex_date"].isoformat()]
+            self.assertEqual(len(interval), interval[0]["allocation_trading_days"])
+            self.assertAlmostEqual(sum(r["daily_dividend_cny"] for r in interval), dividend["dividend_per_unit_cny"], places=12)
+            self.assertEqual(interval[-1]["trade_date"], dividend["ex_date"].isoformat())
+            self.assertEqual(len({r["daily_dividend_cny"] for r in interval}), 1)
+        self.assertEqual(rows[0]["trade_date"], "2019-12-27")
+        self.assertIsNone(rows[0]["ttm_dividend_yield_pct"])
+        self.assertTrue(rows[-1]["ttm_history_complete"])
 
-    def test_future_distributions_cannot_rewrite_history(self):
-        before = [r for r in self.official_dividends() if r["ex_date"] <= date(2026, 6, 17)]
-        price = [{"trade_date": "2026-06-17", "close": 1.537}]
-        self.assertEqual(cn.calculate(price, before), cn.calculate(price, self.official_dividends()))
+    def test_ttm_is_twelve_month_allocations_not_fixed_session_count_or_cash_sum(self):
+        rows = cn.calculate(self.official_prices(), self.official_dividends())
+        indexed = {r["trade_date"]: r for r in rows}
+        leap = indexed["2024-02-29"]
+        self.assertEqual(leap["ttm_window_start_exclusive"], "2023-02-28")
+        for day in ["2024-02-29", "2026-06-17", "2026-06-18", "2026-09-16"]:
+            row = indexed[day]
+            window = [r for r in rows if row["ttm_window_start_exclusive"] < r["trade_date"] <= day]
+            self.assertAlmostEqual(row["ttm_dividend_cny"], sum(r["daily_dividend_cny"] for r in window), places=11)
+            self.assertEqual(row["ttm_trading_days"], len(window))
+            self.assertAlmostEqual(row["ttm_dividend_yield_pct"], row["ttm_dividend_cny"] / row["close"] * 100)
+        self.assertEqual(indexed["2026-09-16"]["actual_365d_dividend_count"], 5)
+        self.assertAlmostEqual(indexed["2026-09-16"]["actual_365d_dividend_cny"], 0.085)
+        self.assertIsNone(indexed["2020-12-25"]["ttm_dividend_cny"])
+        self.assertIsNotNone(indexed["2020-12-28"]["ttm_dividend_cny"])
+
+    def test_dividend_is_not_booked_as_a_lump_on_ex_date(self):
+        rows = cn.calculate(self.official_prices(), self.official_dividends())
+        indexed = {r["trade_date"]: r for r in rows}
+        for day, previous in [("2026-06-18", "2026-06-17"), ("2026-09-16", "2026-09-15")]:
+            new, old = indexed[day], indexed[previous]
+            expired = sum(r["daily_dividend_cny"] for r in rows
+                          if old["ttm_window_start_exclusive"] < r["trade_date"] <= new["ttm_window_start_exclusive"])
+            self.assertAlmostEqual(new["ttm_dividend_cny"] - old["ttm_dividend_cny"], new["daily_dividend_cny"] - expired, places=11)
+            self.assertLess(abs(new["ttm_dividend_cny"] - old["ttm_dividend_cny"]), 0.001)
+
+    def test_future_payment_waits_for_ex_date_then_replaces_estimates(self):
+        prices, dividends = self.official_prices(), self.official_dividends()
+        before_prices = [r for r in prices if r["trade_date"] < "2026-09-16"]
+        before = cn.calculate(before_prices, dividends[:-1])
+        self.assertEqual(before, cn.calculate(before_prices, dividends))
+        after = cn.calculate([r for r in prices if r["trade_date"] <= "2026-09-16"], dividends)
+        past = {r["trade_date"]: r for r in before}
+        for row in after:
+            if "2026-06-18" < row["trade_date"] <= "2026-09-15":
+                self.assertEqual(past[row["trade_date"]]["allocation_status"], "estimated")
+                self.assertEqual(row["allocation_status"], "historical")
+                self.assertEqual(row["ttm_estimated_trading_days"], 0)
+        self.assertEqual(after[-1]["ttm_estimated_trading_days"], 0)
+        full = cn.calculate(prices, dividends)
+        latest = full[-1]
+        tail = [r for r in full if r["trade_date"] > "2026-09-16"]
+        self.assertEqual(latest["ttm_estimated_trading_days"], len(tail))
+        self.assertTrue(all(r["allocation_status"] == "estimated" for r in tail))
+        self.assertAlmostEqual(latest["ttm_estimated_dividend_cny"], len(tail) * after[-1]["daily_dividend_cny"], places=11)
+
+    def test_missing_ex_date_cannot_silently_change_allocation(self):
+        prices = [r for r in self.official_prices() if r["trade_date"] != "2026-06-18"]
+        with self.assertRaisesRegex(RuntimeError, "Missing ex-date"):
+            cn.calculate(prices, self.official_dividends())
+        with self.assertRaisesRegex(RuntimeError, "complete history"):
+            cn.calculate(self.official_prices()[1:], self.official_dividends())
 
     def test_recalculation_keeps_prices_and_original_price_timestamp(self):
         with tempfile.TemporaryDirectory() as folder, patch.object(cn.base, "OUTPUT_DIR", Path(folder)):
-            price = [{"trade_date": "2019-12-27", "close": 1.01, "source_id": "verified"},
-                     {"trade_date": "2026-09-16", "close": 1.55, "source_id": "verified"}]
-            cn.base.write_csv(Path(folder) / cn.DAILY_NAME, price, list(price[0]))
+            prices = self.official_prices()
+            cn.base.write_csv(Path(folder) / cn.DAILY_NAME, prices, list(prices[0]))
             (Path(folder) / "515080_summary.json").write_text(json.dumps({
-                "temporary_price_source": False, "latest": price[-1], "price_rows": 2, "updated_at": "original"}))
+                "temporary_price_source": False, "latest": prices[-1], "price_rows": len(prices), "updated_at": "original"}))
             with patch.object(cn, "fetch_dividends", return_value=self.official_dividends()), patch.object(cn, "fetch_prices") as fetch:
                 cn.update_yield(recalculate=True)
                 fetch.assert_not_called()
             daily = cn.base.read_csv_rows(Path(folder) / cn.DAILY_NAME)
             summary = cn.base.read_json(Path(folder) / "515080_summary.json", {})
-            self.assertEqual([float(r["close"]) for r in daily], [1.01, 1.55])
+            self.assertEqual([float(r["close"]) for r in daily], [r["close"] for r in prices])
             self.assertEqual(summary["price_snapshot_updated_at"], "original")
             self.assertEqual(summary["calculation_method"], cn.CALCULATION_METHOD)
-            self.assertEqual(float(daily[-1]["ttm_dividend_cny"]), 0.07)
+            self.assertGreater(float(daily[-1]["ttm_estimated_dividend_cny"]), 0)
 
     def test_recalculation_refuses_mismatched_snapshot_without_overwriting(self):
         with tempfile.TemporaryDirectory() as folder, patch.object(cn.base, "OUTPUT_DIR", Path(folder)):

@@ -7,6 +7,7 @@ import importlib.util
 import json
 import math
 import time
+from bisect import bisect_right
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -24,13 +25,12 @@ CSI_URL = "https://oss-ch.csindex.com.cn/static/html/csindex/public/uploads/file
 CSI_WEIGHT_URL = "https://oss-ch.csindex.com.cn/static/html/csindex/public/uploads/file/autofile/closeweight/000922closeweight.xls"
 TENCENT_URL = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
 DAILY_NAME = "515080_ttm_dividend_yield_daily.csv"
-CALCULATION_METHOD = "frequency_adjusted_ttm_v1"
-# Effective from the first ex-date at each verified historical frequency.
-# CMF official distributions: annual in 2020, semiannual in 2021–2023,
-# quarterly from 2024 (including the Q2 2024 payment ex-dated July 1).
-DIVIDEND_FREQUENCIES = ((date(2020, 11, 30), 1), (date(2021, 6, 18), 2), (date(2024, 3, 28), 4))
-DAILY_FIELDS = ["trade_date", "close", "source_id", "actual_dividend_count",
-                "annual_dividend_frequency", "estimated_dividend_count", "dividend_as_of",
+CALCULATION_METHOD = "trading_day_allocated_ttm_v1"
+DAILY_FIELDS = ["trade_date", "close", "source_id", "daily_dividend_cny",
+                "allocation_status", "allocation_period_start", "allocation_period_end",
+                "allocation_trading_days", "allocation_source_ex_date",
+                "ttm_window_start_exclusive", "ttm_trading_days", "ttm_history_complete",
+                "ttm_estimated_trading_days", "ttm_estimated_dividend_cny",
                 "ttm_dividend_cny", "ttm_dividend_yield_pct", "actual_365d_dividend_count",
                 "actual_365d_dividend_cny", "actual_365d_dividend_yield_pct"]
 
@@ -160,28 +160,67 @@ def fetch_dividends():
     return sorted(rows, key=lambda r: r["ex_date"])
 
 
+def previous_year(day):
+    """Twelve calendar months, including the leap-day boundary convention."""
+    try:
+        return day.replace(year=day.year - 1)
+    except ValueError:
+        return day.replace(year=day.year - 1, day=28)
+
+
 def calculate(prices, dividends):
+    prices = normalize_prices(prices)
+    if not prices or prices[0]["trade_date"] != LISTING_DATE.isoformat():
+        raise RuntimeError("Trading-day allocation requires complete history from listing")
+    days = [base.parse_date(row["trade_date"]) for row in prices]
+    # Historical allocation deliberately backfills completed intervals, but an
+    # announced payment whose ex-date is after the snapshot is never allocated.
+    dividends = sorted((r for r in dividends if r["ex_date"] <= days[-1]), key=lambda r: r["ex_date"])
     if not dividends:
         raise RuntimeError("Missing 515080 distributions for TTM calculation")
-    dividends = sorted(dividends, key=lambda row: row["ex_date"])
+    if len({r["ex_date"] for r in dividends}) != len(dividends):
+        raise RuntimeError("Duplicate 515080 ex-dividend date")
+    positions = {day: i for i, day in enumerate(days)}
+    allocations = []
+    start = 0
+    for dividend in dividends:
+        ex_date = dividend["ex_date"]
+        amount = dividend["dividend_per_unit_cny"]
+        if ex_date not in positions or not math.isfinite(amount) or amount <= 0:
+            raise RuntimeError("Missing ex-date quote or invalid dividend for trading-day allocation")
+        end = positions[ex_date] + 1
+        count = end - start
+        daily = amount / count
+        allocation = {"daily_dividend_cny": daily, "allocation_status": "historical",
+                      "allocation_period_start": days[start].isoformat(),
+                      "allocation_period_end": ex_date.isoformat(),
+                      "allocation_trading_days": count, "allocation_source_ex_date": ex_date.isoformat()}
+        allocations.extend(dict(allocation) for _ in range(count))
+        start = end
+    # The next payment is unknown: carry the most recently completed interval's
+    # per-session amount, explicitly estimated until the next ex-date backfill.
+    if start < len(days):
+        allocation = {**allocations[-1], "allocation_status": "estimated",
+                      "allocation_period_start": days[start].isoformat(),
+                      "allocation_period_end": None, "allocation_trading_days": None}
+        allocations.extend(dict(allocation) for _ in range(len(days) - start))
+
     output = []
     first = dividends[0]["ex_date"]
-    for price in prices:
-        day = base.parse_date(price["trade_date"])
+    for i, (price, allocation) in enumerate(zip(prices, allocations)):
+        day = days[i]
+        cutoff = previous_year(day)
+        window = allocations[bisect_right(days, cutoff):i + 1]
+        complete = cutoff >= days[0]
+        estimated = [r for r in window if r["allocation_status"] == "estimated"]
+        amount = round(math.fsum(r["daily_dividend_cny"] for r in window), 12) if complete else None
         actual = [r for r in dividends if day - timedelta(days=365) < r["ex_date"] <= day]
-        actual_amount = round(sum(r["dividend_per_unit_cny"] for r in actual), 10) if day >= first else None
-        regimes = [(start, frequency) for start, frequency in DIVIDEND_FREQUENCIES if start <= day]
-        start, frequency = regimes[-1] if regimes else (LISTING_DATE, 0)
-        known = [r for r in dividends if start <= r["ex_date"] <= day][-frequency:] if frequency else []
-        estimated = frequency - len(known) if known else 0
-        # Equal-frequency periods prevent anniversary drift from counting 3 or 5 quarters.
-        # At a frequency transition do not mix semiannual and quarterly payment amounts.
-        amount = round(sum(r["dividend_per_unit_cny"] for r in known)
-                       + known[-1]["dividend_per_unit_cny"] * estimated, 10) if known else None
-        output.append({**price, "actual_dividend_count": len(known),
-                       "annual_dividend_frequency": frequency,
-                       "estimated_dividend_count": estimated,
-                       "dividend_as_of": known[-1]["ex_date"].isoformat() if known else None,
+        actual_amount = round(math.fsum(r["dividend_per_unit_cny"] for r in actual), 10) if day >= first else None
+        output.append({**price, **allocation,
+                       "ttm_window_start_exclusive": cutoff.isoformat(),
+                       "ttm_trading_days": len(window), "ttm_history_complete": complete,
+                       "ttm_estimated_trading_days": len(estimated),
+                       "ttm_estimated_dividend_cny": round(math.fsum(r["daily_dividend_cny"] for r in estimated), 12),
                        "ttm_dividend_cny": amount,
                        "ttm_dividend_yield_pct": amount / price["close"] * 100 if amount is not None else None,
                        "actual_365d_dividend_count": len(actual),
@@ -219,8 +258,10 @@ def update_yield(recalculate=False):
                "temporary_price_source": temporary, "data_request_id": REQUEST_ID,
                "dividend_source": "Data_Server /v1/cn-etf-distributions; CMF official announcements",
                "calculation_method": CALCULATION_METHOD,
-               "calculation": "latest N same-frequency ex-dividend payments plus latest payment * (N - count), divided by raw close; N=1/2/4 for verified annual/semiannual/quarterly stages",
-               "frequency_stages": [{"first_ex_date": start.isoformat(), "annual_frequency": frequency} for start, frequency in DIVIDEND_FREQUENCIES],
+               "calculation": "allocate each completed dividend equally over quoted trading days in (previous ex-date, ex-date], first interval starts on listing date; sum allocations in (trade_date minus 12 months, trade_date], then divide by raw close",
+               "history_policy": "retrospective allocation; completed intervals backfill history, not point-in-time cash returns; TTM blank before one full year of listing history",
+               "open_interval_policy": "estimate each trading day using the latest completed interval daily amount; replace estimates after the next ex-date",
+               "allocation_as_of": prices[-1]["trade_date"],
                "actual_365d_calculation": "unadjusted cash sum in (trade_date-365 days, trade_date], retained separately for audit"}
     base.write_csv(base.OUTPUT_DIR / DAILY_NAME, daily, DAILY_FIELDS)
     base.write_csv(base.OUTPUT_DIR / "515080_dividends_source_cmf.csv", dividends,
