@@ -1,0 +1,636 @@
+{
+  "checked_at_cst": "2026-09-27 10:10",
+  "app_commit": "9aea8d75438491f7f05dc8cec8be4f814527edc8",
+  "app_version": "0.7.3",
+  "live_summary": {
+    "symbol": "515080",
+    "currency": "CNY",
+    "updated_at": "2026-09-25T10:06:54.431221+00:00",
+    "latest": {
+      "trade_date": "2026-09-24",
+      "close": 1.541,
+      "source_id": "tencent_finance_raw_temporary",
+      "source_url": "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get",
+      "actual_dividend_count": 4,
+      "annual_dividend_frequency": 4,
+      "estimated_dividend_count": 0,
+      "dividend_as_of": "2026-09-16",
+      "ttm_dividend_cny": 0.07,
+      "ttm_dividend_yield_pct": 4.542504866969501,
+      "actual_365d_dividend_count": 4,
+      "actual_365d_dividend_cny": 0.07,
+      "actual_365d_dividend_yield_pct": 4.542504866969501
+    },
+    "price_rows": 1636,
+    "dividend_rows": 18,
+    "price_snapshot_updated_at": "2026-09-25T10:06:54.431221+00:00",
+    "price_source": "Tencent raw daily quotes (temporary)",
+    "temporary_price_source": true,
+    "data_request_id": "522b0258-c618-4ba0-b6e2-4a411d0f5d35",
+    "dividend_source": "Data_Server /v1/cn-etf-distributions; CMF official announcements",
+    "calculation_method": "frequency_adjusted_ttm_v1",
+    "calculation": "latest N same-frequency ex-dividend payments plus latest payment * (N - count), divided by raw close; N=1/2/4 for verified annual/semiannual/quarterly stages",
+    "frequency_stages": [
+      {
+        "first_ex_date": "2020-11-30",
+        "annual_frequency": 1
+      },
+      {
+        "first_ex_date": "2021-06-18",
+        "annual_frequency": 2
+      },
+      {
+        "first_ex_date": "2024-03-28",
+        "annual_frequency": 4
+      }
+    ],
+    "actual_365d_calculation": "unadjusted cash sum in (trade_date-365 days, trade_date], retained separately for audit"
+  },
+  "structure": {
+    "rows": 1636,
+    "first": "2019-12-27",
+    "last": "2026-09-24",
+    "unique_dates": 1636,
+    "sorted": true,
+    "sources": {
+      "tencent_finance": 1635,
+      "tencent_finance_raw_temporary": 1
+    }
+  },
+  "data_server_comparison": {
+    "api_rows": 1635,
+    "unique_dates": 1635,
+    "range": [
+      "2019-12-27",
+      "2026-09-23"
+    ],
+    "sources": [
+      "tencent_finance"
+    ],
+    "price_differences": [],
+    "site_dates_missing_in_api": [
+      "2026-09-24"
+    ]
+  },
+  "independent_source_comparison": {
+    "eastmoney_raw_fqt0": {
+      "rows": 1636,
+      "overlap": 1636,
+      "missing": [],
+      "mismatches": [
+        {
+          "date": "2020-08-21",
+          "site": "1.239",
+          "source": 1.24
+        },
+        {
+          "date": "2020-08-24",
+          "site": "1.249",
+          "source": 1.25
+        },
+        {
+          "date": "2020-08-25",
+          "site": "1.246",
+          "source": 1.247
+        },
+        {
+          "date": "2020-08-26",
+          "site": "1.23",
+          "source": 1.231
+        },
+        {
+          "date": "2020-08-27",
+          "site": "1.234",
+          "source": 1.235
+        }
+      ]
+    },
+    "sina_daily": {
+      "rows": 1636,
+      "overlap": 1636,
+      "missing": [],
+      "mismatches": []
+    }
+  },
+  "isolated_replay": {
+    "source": "Tencent explicit day raw field",
+    "rows": 1636,
+    "dividends": 18,
+    "differences": [],
+    "extra_dates": []
+  },
+  "chart_geometry": {
+    "displayed_rows": 1414,
+    "start": "2020-11-30",
+    "end": "2026-09-24",
+    "max_price_reconstruction_error": 2.220446049250313e-16,
+    "max_date_position_error_px": 0,
+    "plot_width_px": 1010,
+    "plot_height_px": 426,
+    "mean_pixels_per_point": 0.7142857142857143,
+    "price_axis_full": [
+      1.1632,
+      1.7258
+    ],
+    "price_axis_month": [
+      1.53236,
+      1.62864
+    ],
+    "month_one_cent_move_px": 44.24594931449928,
+    "svg_commands": [
+      "M",
+      "L"
+    ]
+  },
+  "largest_moves": [
+    {
+      "date": "2020-02-03",
+      "previous": "2020-01-23",
+      "before": 1.04,
+      "close": 0.94,
+      "change_pct": -9.6154,
+      "dividend": 0,
+      "including_dividend_return_pct": -9.6154,
+      "gap_days": 11,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2024-10-09",
+      "previous": "2024-10-08",
+      "before": 1.631,
+      "close": 1.5,
+      "change_pct": -8.0319,
+      "dividend": 0,
+      "including_dividend_return_pct": -8.0319,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2024-09-30",
+      "previous": "2024-09-27",
+      "before": 1.502,
+      "close": 1.62,
+      "change_pct": 7.8562,
+      "dividend": 0,
+      "including_dividend_return_pct": 7.8562,
+      "gap_days": 3,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2022-03-15",
+      "previous": "2022-03-14",
+      "before": 1.405,
+      "close": 1.307,
+      "change_pct": -6.9751,
+      "dividend": 0,
+      "including_dividend_return_pct": -6.9751,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2025-04-07",
+      "previous": "2025-04-03",
+      "before": 1.525,
+      "close": 1.427,
+      "change_pct": -6.4262,
+      "dividend": 0,
+      "including_dividend_return_pct": -6.4262,
+      "gap_days": 4,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2020-07-06",
+      "previous": "2020-07-03",
+      "before": 1.089,
+      "close": 1.154,
+      "change_pct": 5.9688,
+      "dividend": 0,
+      "including_dividend_return_pct": 5.9688,
+      "gap_days": 3,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2020-11-30",
+      "previous": "2020-11-27",
+      "before": 1.362,
+      "close": 1.289,
+      "change_pct": -5.3598,
+      "dividend": 0.06,
+      "including_dividend_return_pct": -0.9545,
+      "gap_days": 3,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2020-07-20",
+      "previous": "2020-07-17",
+      "before": 1.157,
+      "close": 1.21,
+      "change_pct": 4.5808,
+      "dividend": 0,
+      "including_dividend_return_pct": 4.5808,
+      "gap_days": 3,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2024-09-24",
+      "previous": "2024-09-23",
+      "before": 1.366,
+      "close": 1.424,
+      "change_pct": 4.246,
+      "dividend": 0,
+      "including_dividend_return_pct": 4.246,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2022-04-25",
+      "previous": "2022-04-22",
+      "before": 1.43,
+      "close": 1.372,
+      "change_pct": -4.0559,
+      "dividend": 0,
+      "including_dividend_return_pct": -4.0559,
+      "gap_days": 3,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2024-09-26",
+      "previous": "2024-09-25",
+      "before": 1.445,
+      "close": 1.498,
+      "change_pct": 3.6678,
+      "dividend": 0,
+      "including_dividend_return_pct": 3.6678,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2020-07-24",
+      "previous": "2020-07-23",
+      "before": 1.2,
+      "close": 1.157,
+      "change_pct": -3.5833,
+      "dividend": 0,
+      "including_dividend_return_pct": -3.5833,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2020-03-02",
+      "previous": "2020-02-28",
+      "before": 1.008,
+      "close": 1.044,
+      "change_pct": 3.5714,
+      "dividend": 0,
+      "including_dividend_return_pct": 3.5714,
+      "gap_days": 3,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2021-07-27",
+      "previous": "2021-07-26",
+      "before": 1.405,
+      "close": 1.355,
+      "change_pct": -3.5587,
+      "dividend": 0,
+      "including_dividend_return_pct": -3.5587,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2024-01-22",
+      "previous": "2024-01-19",
+      "before": 1.383,
+      "close": 1.335,
+      "change_pct": -3.4707,
+      "dividend": 0,
+      "including_dividend_return_pct": -3.4707,
+      "gap_days": 3,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2022-01-25",
+      "previous": "2022-01-24",
+      "before": 1.467,
+      "close": 1.417,
+      "change_pct": -3.4083,
+      "dividend": 0,
+      "including_dividend_return_pct": -3.4083,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2024-10-10",
+      "previous": "2024-10-09",
+      "before": 1.5,
+      "close": 1.551,
+      "change_pct": 3.4,
+      "dividend": 0,
+      "including_dividend_return_pct": 3.4,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2026-06-18",
+      "previous": "2026-06-17",
+      "before": 1.537,
+      "close": 1.488,
+      "change_pct": -3.188,
+      "dividend": 0.02,
+      "including_dividend_return_pct": -1.8868,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2022-09-16",
+      "previous": "2022-09-15",
+      "before": 1.482,
+      "close": 1.435,
+      "change_pct": -3.1714,
+      "dividend": 0,
+      "including_dividend_return_pct": -3.1714,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2020-07-13",
+      "previous": "2020-07-10",
+      "before": 1.152,
+      "close": 1.188,
+      "change_pct": 3.125,
+      "dividend": 0,
+      "including_dividend_return_pct": 3.125,
+      "gap_days": 3,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2026-02-02",
+      "previous": "2026-01-30",
+      "before": 1.605,
+      "close": 1.556,
+      "change_pct": -3.053,
+      "dividend": 0,
+      "including_dividend_return_pct": -3.053,
+      "gap_days": 3,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2021-09-24",
+      "previous": "2021-09-23",
+      "before": 1.583,
+      "close": 1.535,
+      "change_pct": -3.0322,
+      "dividend": 0,
+      "including_dividend_return_pct": -3.0322,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2020-03-23",
+      "previous": "2020-03-20",
+      "before": 0.962,
+      "close": 0.933,
+      "change_pct": -3.0146,
+      "dividend": 0,
+      "including_dividend_return_pct": -3.0146,
+      "gap_days": 3,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2020-03-16",
+      "previous": "2020-03-13",
+      "before": 1.003,
+      "close": 0.973,
+      "change_pct": -2.991,
+      "dividend": 0,
+      "including_dividend_return_pct": -2.991,
+      "gap_days": 3,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2022-04-26",
+      "previous": "2022-04-25",
+      "before": 1.372,
+      "close": 1.331,
+      "change_pct": -2.9883,
+      "dividend": 0,
+      "including_dividend_return_pct": -2.9883,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    }
+  ],
+  "ex_dividend_days": [
+    {
+      "date": "2020-11-30",
+      "previous": "2020-11-27",
+      "before": 1.362,
+      "close": 1.289,
+      "change_pct": -5.3598,
+      "dividend": 0.06,
+      "including_dividend_return_pct": -0.9545,
+      "gap_days": 3,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2021-06-18",
+      "previous": "2021-06-17",
+      "before": 1.406,
+      "close": 1.377,
+      "change_pct": -2.0626,
+      "dividend": 0.03,
+      "including_dividend_return_pct": 0.0711,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2021-12-09",
+      "previous": "2021-12-08",
+      "before": 1.461,
+      "close": 1.437,
+      "change_pct": -1.6427,
+      "dividend": 0.03,
+      "including_dividend_return_pct": 0.4107,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2022-06-27",
+      "previous": "2022-06-24",
+      "before": 1.442,
+      "close": 1.426,
+      "change_pct": -1.1096,
+      "dividend": 0.03,
+      "including_dividend_return_pct": 0.9709,
+      "gap_days": 3,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2022-11-29",
+      "previous": "2022-11-28",
+      "before": 1.443,
+      "close": 1.456,
+      "change_pct": 0.9009,
+      "dividend": 0.03,
+      "including_dividend_return_pct": 2.9799,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2023-06-16",
+      "previous": "2023-06-15",
+      "before": 1.493,
+      "close": 1.456,
+      "change_pct": -2.4782,
+      "dividend": 0.034999999999999996,
+      "including_dividend_return_pct": -0.134,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2023-12-01",
+      "previous": "2023-11-30",
+      "before": 1.451,
+      "close": 1.423,
+      "change_pct": -1.9297,
+      "dividend": 0.034999999999999996,
+      "including_dividend_return_pct": 0.4824,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2024-03-28",
+      "previous": "2024-03-27",
+      "before": 1.491,
+      "close": 1.476,
+      "change_pct": -1.006,
+      "dividend": 0.015,
+      "including_dividend_return_pct": -0.0,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2024-07-01",
+      "previous": "2024-06-28",
+      "before": 1.524,
+      "close": 1.536,
+      "change_pct": 0.7874,
+      "dividend": 0.02,
+      "including_dividend_return_pct": 2.0997,
+      "gap_days": 3,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2024-09-20",
+      "previous": "2024-09-19",
+      "before": 1.367,
+      "close": 1.35,
+      "change_pct": -1.2436,
+      "dividend": 0.015,
+      "including_dividend_return_pct": -0.1463,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2024-12-02",
+      "previous": "2024-11-29",
+      "before": 1.534,
+      "close": 1.52,
+      "change_pct": -0.9126,
+      "dividend": 0.02,
+      "including_dividend_return_pct": 0.3911,
+      "gap_days": 3,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2025-03-19",
+      "previous": "2025-03-18",
+      "before": 1.53,
+      "close": 1.517,
+      "change_pct": -0.8497,
+      "dividend": 0.015,
+      "including_dividend_return_pct": 0.1307,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2025-06-17",
+      "previous": "2025-06-16",
+      "before": 1.53,
+      "close": 1.516,
+      "change_pct": -0.915,
+      "dividend": 0.015,
+      "including_dividend_return_pct": 0.0654,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2025-09-17",
+      "previous": "2025-09-16",
+      "before": 1.576,
+      "close": 1.564,
+      "change_pct": -0.7614,
+      "dividend": 0.015,
+      "including_dividend_return_pct": 0.1904,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2025-12-18",
+      "previous": "2025-12-17",
+      "before": 1.548,
+      "close": 1.54,
+      "change_pct": -0.5168,
+      "dividend": 0.02,
+      "including_dividend_return_pct": 0.7752,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2026-03-18",
+      "previous": "2026-03-17",
+      "before": 1.655,
+      "close": 1.629,
+      "change_pct": -1.571,
+      "dividend": 0.015,
+      "including_dividend_return_pct": -0.6647,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2026-06-18",
+      "previous": "2026-06-17",
+      "before": 1.537,
+      "close": 1.488,
+      "change_pct": -3.188,
+      "dividend": 0.02,
+      "including_dividend_return_pct": -1.8868,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    },
+    {
+      "date": "2026-09-16",
+      "previous": "2026-09-15",
+      "before": 1.572,
+      "close": 1.55,
+      "change_pct": -1.3995,
+      "dividend": 0.015,
+      "including_dividend_return_pct": -0.4453,
+      "gap_days": 1,
+      "source": "tencent_finance"
+    }
+  ],
+  "source_hashes": {
+    "request.json": "4d295ed9dd6ff33acb771251bbdd38aa4f9bdabf31d3b4b74ceefd938b0edaa2",
+    "independent-comparison.json": "bfde77ed62562a2f292f54489dace2fd3345f8b6c8995b176f138de77979162f",
+    "data-server-raw-quotes.json": "ada46241aee20f6ef3e68b5e36fcd75585d5bd07819224fdb5276989949b639d",
+    "isolated-comparison.json": "b02faa509316ab430153ffdaa18293858b1ffa705afeb02559aba84b37ae9948",
+    "isolated-daily.csv": "544fe0086ea96d76e181cf5e648d3d6718109a01807a32fd7358fccc986ec877",
+    "api-comparison.json": "690128fc6c4d832f872fc2ffb0ca54af0684649f75128ca7bf9d18c52854edbe",
+    "eastmoney-raw.json": "5cf26d66b53523b5139377ed39ec37fad73b94195fd1037c1432e8f71a17c2bb",
+    "sina-daily.json": "e805cee82ae08a82d9eab6d8c1da18034681a1d7026c5bf082ff9d91b7073221",
+    "515080_ttm_dividend_yield_daily.csv": "7fb130576f8b3d660dcb6f141de061f4169fe813b336dd509000d253ed0c30de",
+    "analysis.json": "41dc2e7479bddbd2e98c6f7002711adb92adff2a4ae5056783d53c0c2a0fc8b7",
+    "515080_summary.json": "c6f03d1a6a3c66a7d99f6d20f1e2705004c15b12524952983e6da14f431015a2",
+    "515080_dividends_source_cmf.csv": "b701a57d1e39fa1e801fc247580786cda8c80359aaeb75472a84902c201c2db2"
+  }
+}
